@@ -1,35 +1,29 @@
 # emuThreeDS
-World's first Nintendo 3DS emulator for Apple devices based on Citra.
+Nintendo 3DS emulator for Apple devices based on Citra.
 
 ## Progress
-Progress updates for sections within the port.
+Progression details for sections within the project.
 
 ### Audio
-![100%](https://progress-bar.dev/100?width=110)  
-Audio support is complete.
-- Removed cubeb
-- Updated SoundTouch
+![99%](https://progress-bar.dev/99?width=110)  
+Audio appears to work fully, progress will stay at 99% for now.
 
 ### Common
 ![75%](https://progress-bar.dev/75?width=110)  
-~~Common's `file_util.h/.cpp` will need to be rewritten to support iOS.~~  
-Citra's "Citra" folder is now created in the Files.app accessible Documents directory of the app.
+Common appears to work fully, progress will stay at 75% until rom installation, etc. is tested.
 
 ### Core
-![50%](https://progress-bar.dev/50?width=110)  
-Core support is basically complete but will require testing.
-- Replaced `pthread_jit_write_np` with `mprotect`
-  - This needs looking into as I've not used mprotect before
-  
+![99%](https://progress-bar.dev/99?width=110)  
+Core appears to work fully, progress will stay at 99% until the JIT requirement is removed.
+
 ### Dedicated Room
 ![0%](https://progress-bar.dev/0?width=110)  
 No changes have been made to dedicated room yet.
 
 ### Input Common
-![25%](https://progress-bar.dev/25?width=110)  
-Input Common will need to be rewritten to support iOS.
-- Removed `input_common`
-- Controllers should still be supported via SDL2
+![0%](https://progress-bar.dev/0?width=110)  
+Input Common does not work.  
+- SDL2 button mapping may be the issue.
 
 ### Network
 ![0%](https://progress-bar.dev/0?width=110)  
@@ -37,11 +31,8 @@ No changes have been made to network yet.
 
 ### Video Core
 ![90%](https://progress-bar.dev/90?width=110)  
-~~Video Core currently crashes on `vkCreateSemaphore` and will require more work.~~  
-~~Video Core now crashes at rendering and is likely due to `window_info.render_surface` being null.~~  
-Video Core no longer crashes but will require testing after the filesystem rewrite.  
-Video Core now appears to compile shaders faster (not timed).  
-All Metal and Core::System& code has been moved to Objective-C++ and Swift, removing the need for SDL2.
+Video Core appears to work fully, progress will stay at 99% until further testing is done.
+- I'd like to implement LayoutOption::SeparateWindows into Vulkan.
 
 ### Web Service
 ![0%](https://progress-bar.dev/0?width=110)  
