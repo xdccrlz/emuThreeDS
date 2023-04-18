@@ -30,7 +30,7 @@ Input Common does not work.
 No changes have been made to network yet.
 
 ### Video Core
-![90%](https://progress-bar.dev/90?width=110)  
+![99%](https://progress-bar.dev/99?width=110)  
 Video Core appears to work fully, progress will stay at 99% until further testing is done.
 - I'd like to implement LayoutOption::SeparateWindows into Vulkan.
 
