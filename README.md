@@ -26,10 +26,9 @@ Core appears to work fully, progress will stay at 99% until the JIT requirement 
 ![0%](https://progress-bar.dev/0?width=110)  
 No changes have been made to dedicated room yet.
 
-### Input Common
-![0%](https://progress-bar.dev/0?width=110)  
-Input Common does not work.  
-- SDL2 button mapping may be the issue.
+### ~~Input Common~~
+![50%](https://progress-bar.dev/50?width=110)  
+Input Common has now been replaced with native input support.
 
 ### Network
 ![0%](https://progress-bar.dev/0?width=110)  
@@ -39,6 +38,9 @@ No changes have been made to network yet.
 ![99%](https://progress-bar.dev/99?width=110)  
 Video Core appears to work fully, progress will stay at 99% until further testing is done.
 - I'd like to implement LayoutOption::SeparateWindows into Vulkan.
+- Current shader conversion pipeline is GLSL > SPIR-V > MSL.
+  - This could be improved by rewriting the GLSL shaders to SPIR-V meaning one less layer of conversion is needed.
+  - SPIR-V shaders are required for MoltenVK afaik.
 
 ### Web Service
 ![0%](https://progress-bar.dev/0?width=110)  
