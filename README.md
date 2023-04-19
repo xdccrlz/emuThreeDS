@@ -1,6 +1,11 @@
 # emuThreeDS
 Nintendo 3DS emulator for Apple devices based on Citra.
 
+## Support
+Support the development of all of my emulation work by going to the links below!
+> Donations are greatly appreciated but are by no means necessary.  
+[BuyMeACoffee](https://buymeacoffee.com/antiquecodes), [Ko-Fi](https://ko-fi.com/antiquecodes), [PayPal](https://paypal.me/officialantique)
+
 ## Progress
 Progression details for sections within the project.
 
