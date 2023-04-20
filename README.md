@@ -27,7 +27,7 @@ Core appears to work fully, progress will stay at 99% until the JIT requirement 
 No changes have been made to dedicated room yet.
 
 ### ~~Input Common~~
-![50%](https://progress-bar.dev/50?width=110)  
+![75%](https://progress-bar.dev/75?width=110)  
 Input Common has now been replaced with native input support.
 
 ### Network
