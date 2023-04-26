@@ -11,7 +11,7 @@ Support the development of all of my emulation work by going to the links below!
 Please be aware that if it is found you are stealing my or Citra's code **and** not open-sourcing it (as per GPLv3) nor attributing it, all progress on this emulator by me will cease.
 
 ### Building
-This project is built in a way that is different from most and as such it will not be easy to build. I will not be making a guide on how to build it nor will I be providing any assistant.
+This project is built in a way that is different from most and as such it will not be easy to build. I will not be making a guide on how to build it nor will I be providing any assistance.
 
 ## Progress
 Progression details for sections within the project.
