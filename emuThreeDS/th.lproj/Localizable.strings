@@ -1,0 +1,18 @@
+/* 
+  Localizable.strings
+  emuThreeDS
+
+  Created by Antique on 19/4/2023.
+  
+*/
+
+"settings.title" = "การตั้งค่า";
+
+"settings.headers.general" = "General";
+"settings.general.use_jit" = "ใช้ JIT";
+"settings.general.use_hle" = "ใช้ HLE";
+
+"cancel" = "ยกเลิก";
+"save" = "บันทึก";
+
+"roms" = "Roms";

@@ -1,0 +1,18 @@
+/* 
+  Localizable.strings
+  emuThreeDS
+
+  Created by Antique on 19/4/2023.
+  
+*/
+
+"settings.title" = "إعدادات";
+
+"settings.headers.general" = "عام";
+"settings.general.use_jit" = " استخدمJIT";
+"settings.general.use_hle" = " استخدمHLE";
+
+"cancel" = "إلغاء";
+"save" = "حفظ";
+
+"roms" = "Roms";

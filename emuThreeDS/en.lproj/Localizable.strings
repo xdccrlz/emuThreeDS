@@ -1,0 +1,24 @@
+/* 
+  Localizable.strings
+  emuThreeDS
+
+  Created by Antique on 19/4/2023.
+  
+*/
+
+"settings.title" = "Settings";
+
+// MARK: SETTINGS HEADERS
+"settings.headers.general" = "General";
+"settings.headers.customization" = "Customization";
+
+// MARK: SETTINGS GENERAL
+"settings.general.use_jit" = "Use JIT";
+"settings.general.use_hle" = "Use HLE";
+
+"settings.customization.resolution_scale" = "Resolution Scale";
+
+"cancel" = "Cancel";
+"save" = "Save";
+
+"roms" = "Roms";

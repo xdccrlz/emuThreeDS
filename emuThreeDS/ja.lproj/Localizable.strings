@@ -1,0 +1,18 @@
+/* 
+  Localizable.strings
+  emuThreeDS
+
+  Created by Antique on 19/4/2023.
+  
+*/
+
+"settings.title" = "設定方法";
+
+"settings.headers.general" = "一般";
+"settings.general.use_jit" = "JIT を使う";
+"settings.general.use_hle" = "HLE を使用する";
+
+"cancel" = "キャンセル";
+"save" = "セーブ";
+
+"roms" = "Roms";
