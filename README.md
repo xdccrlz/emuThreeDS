@@ -13,6 +13,18 @@ Please be aware that if it is found you are stealing my or Citra's code **and** 
 ### Building
 This project is built in a way that is different from most and as such it will not be easy to build. I will not be making a guide on how to build it nor will I be providing any assistance.
 
+## Updates
+### Amiibo, Mii
+Amiibo will now be fully supported in v1.0.5 and above. Users can place Amiibo .bin data files into `/amiibo` in the emuThreeDS directory of the Files app and insert or remove them via the new options button.
+- Support for both inserting and removing an Amiibo is available.
+- Amiibo naming is based on the file name currently, this should change if header data is available.
+
+### On-Screen Gamepad
+The native on-screen gamepad will now be available in v1.0.5 and above and displayed when no physical controller is connected. Users can manually present or dismiss the on-screen gamepad via the new options button.
+
+### Bottom Screen Touch
+Bottom screen touch has been partially added with only half of the bottom screen functional, this will hopefully be fixed before the release of v1.0.5.
+
 ## Progress
 Progression details for sections within the project.
 
@@ -33,8 +45,8 @@ Core appears to work fully, progress will stay at 99% until the JIT requirement 
 No changes have been made to dedicated room yet.
 
 ### ~~Input Common~~
-![75%](https://progress-bar.dev/75?width=110)  
-Input Common has now been replaced with native input support.
+![90%](https://progress-bar.dev/90?width=110)  
+Input Common now supports iOS supported gamepads, the iOS native on-screen gamepad and partial bottom screen touch (currently misaligned, likely x/y value miscalculations).
 
 ### Network
 ![0%](https://progress-bar.dev/0?width=110)  
