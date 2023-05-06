@@ -2,64 +2,25 @@
 Nintendo 3DS emulator for Apple devices based on Citra.
 
 ## Support
-Support the development of all of my emulation work by going to the links below!
-> Donations are greatly appreciated but are by no means necessary.
+Support the development of emuThreeDS by going to the links below!  
+[**BuyMeACoffee**](https://buymeacoffee.com/antiquecodes), [**Ko-Fi**](https://ko-fi.com/antiquecodes), [**PayPal**](https://paypal.me/officialantique)
 
-[BuyMeACoffee](https://buymeacoffee.com/antiquecodes), [Ko-Fi](https://ko-fi.com/antiquecodes), [PayPal](https://paypal.me/officialantique)
+## Coming in v1.0.6
+### Amiibo Support
+Amiibo seem to be broken in v1.0.5.1 and will be fixed in v1.0.6.
 
-## Regarding Code Theft, etc.
-Please be aware that if it is found you are stealing my or Citra's code **and** not open-sourcing it (as per GPLv3) nor attributing it, all progress on this emulator by me will cease.
+### Landscape Support
+Landscape support will be added back after its removal in v1.0.5.1 due to the success of portrait touch support.
 
-### Building
-This project is built in a way that is different from most and as such it will not be easy to build. I will not be making a guide on how to build it nor will I be providing any assistance.
+### Virtual Controller Support
+> Please note, **touch** and **virtual (on-screen) controller** support are different things with **touch** referring to the lower screen.
 
-## Updates
-### Amiibo, Mii
-Amiibo will now be fully supported in v1.0.5 and above. Users can place Amiibo .bin data files into `/amiibo` in the emuThreeDS directory of the Files app and insert or remove them via the new options button.
-- Support for both inserting and removing an Amiibo is available.
-- Amiibo naming is based on the file name currently, this should change if header data is available.
+Virtual (on-screen) controller support seems to be broken in v1.0.5.1 and will be fixed in v1.0.6.
 
-### On-Screen Gamepad
-The native on-screen gamepad will now be available in v1.0.5 and above and displayed when no physical controller is connected. Users can manually present or dismiss the on-screen gamepad via the new options button.
+### Improved Settings
+Settings will be receiving an overhaul to replace the existing sdl2_config.ini in v1.0.6.
 
-### Bottom Screen Touch
-Bottom screen touch has been partially added with only half of the bottom screen functional, this will hopefully be fixed before the release of v1.0.5.
+## Latest Changes
+> 5th May 2023
 
-## Progress
-Progression details for sections within the project.
-
-### Audio
-![99%](https://progress-bar.dev/99?width=110)  
-Audio appears to work fully, progress will stay at 99% for now.
-
-### Common
-![75%](https://progress-bar.dev/75?width=110)  
-Common appears to work fully, progress will stay at 75% until rom installation, etc. is tested.
-
-### Core
-![99%](https://progress-bar.dev/99?width=110)  
-Core appears to work fully, progress will stay at 99% until the JIT requirement is removed.
-
-### Dedicated Room
-![0%](https://progress-bar.dev/0?width=110)  
-No changes have been made to dedicated room yet.
-
-### ~~Input Common~~
-![90%](https://progress-bar.dev/90?width=110)  
-Input Common now supports iOS supported gamepads, the iOS native on-screen gamepad and partial bottom screen touch (currently misaligned, likely x/y value miscalculations).
-
-### Network
-![0%](https://progress-bar.dev/0?width=110)  
-No changes have been made to network yet.
-
-### Video Core
-![99%](https://progress-bar.dev/99?width=110)  
-Video Core appears to work fully, progress will stay at 99% until further testing is done.
-- I'd like to implement LayoutOption::SeparateWindows into Vulkan.
-- Current shader conversion pipeline is GLSL > SPIR-V > MSL.
-  - This could be improved by rewriting the GLSL shaders to SPIR-V meaning one less layer of conversion is needed.
-  - SPIR-V shaders are required for MoltenVK afaik.
-
-### Web Service
-![0%](https://progress-bar.dev/0?width=110)  
-No changes have been made to web service yet.
+- See [CHANGELOG.md](CHANGELOG.md) for more information.
