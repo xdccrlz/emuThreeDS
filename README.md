@@ -21,7 +21,7 @@ Support the development of emuThreeDS by going to the links below!
   </a>
 </span>
 
-## Coming in v1.0.6.
+## Coming in v1.0.6
 ### Amiibo Support
 Amiibo support seems to be broken in v1.0.5.1. This will be fixed in v1.0.6.
 
@@ -35,6 +35,9 @@ Virtual (on-screen) controller support seems to be broken in v1.0.5.1. This will
 
 ### Improved Settings
 Settings will be receiving an overhaul to replace the existing sdl2_config.ini in v1.0.6.
+
+### Improved Audio
+Audio seems to be broken in v1.0.5.1 when Bluetooth is connected. This will be fixed in v1.0.6
 
 ## Latest Changes
 > 5th May 2023
