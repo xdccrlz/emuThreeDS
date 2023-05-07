@@ -40,6 +40,4 @@ Settings will be receiving an overhaul to replace the existing sdl2_config.ini i
 Audio seems to be broken in v1.0.5.1 when Bluetooth is connected. This will be fixed in v1.0.6
 
 ## Latest Changes
-> 5th May 2023
-
-- See [CHANGELOG.md](CHANGELOG.md) for more information.
+See [CHANGELOG.md](CHANGELOG.md) for more information.
