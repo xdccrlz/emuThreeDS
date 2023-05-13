@@ -1,0 +1,44 @@
+{
+    "name": "emuPlace",
+    "identifier": "com.antique.emuplace",
+    "website": "https://emuplace.github.io",
+    "tintColor": "#090C0F",
+    "featuredApps": [
+        "com.antique.emuThreeDS"
+    ],
+    "apps": [
+        {
+            "name": "emuThreeDS",
+            "bundleIdentifier": "com.antique.emuThreeDS",
+            "developerName": "Antique",
+            "subtitle": "Nintendo 3DS emulator for iOS.",
+            "iconURL": "https://raw.githubusercontent.com/emuPlace/emuplace.github.io/main/emuPlace.png",
+            "tintColor": "#5CA399",
+            "screenshotURLs": [
+                "https://example.com/myapp_screenshot1.png",
+                "https://example.com/myapp_screenshot2.png",
+                "https://example.com/myapp_screenshot3.png"
+            ],
+            "versions": [
+                {
+                    "version": "1.0.5.2",
+                    "date": "2023-05-13T12:28:00+08:00",
+                    "size": 30000,
+                    "downloadURL": "https://github.com/emuPlace/emuThreeDS/releases/download/1.0.5.2/emuThreeDS_1.0.5.2_Test.ipa",
+                    "localizedDescription": "New in-game options, Preload textures, Touch and drag support and more!",
+                    "minOSVersion": "15.0"
+                }
+            ]
+        }
+    ],
+    "news": [
+        {
+            "title": "emuThreeDS is on AltStore!",
+            "identifier": "new_feature",
+            "caption": "Nintendo 3DS emulation on iOS is here.",
+            "date": "2023-05-13",
+            "tintColor": "#090C0F",
+            "notify": true
+        }
+    ]
+}
