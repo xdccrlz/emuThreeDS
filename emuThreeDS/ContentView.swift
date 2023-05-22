@@ -9,18 +9,18 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundColor(.accentColor)
-            Text("Hello, world!")
+        TabView {
+            RomsView()
+                .tabItem {
+                    Image(systemName: "folder")
+                    Text("Roms")
+                }
+            
+            EmulationView()
+                .tabItem {
+                    Image(systemName: "gamecontroller")
+                    Text("Emulation")
+                }
         }
-        .padding()
-    }
-}
-
-struct ContentView_Previews: PreviewProvider {
-    static var previews: some View {
-        ContentView()
     }
 }

@@ -600,6 +600,9 @@
 		C15E09C92A1B674E00D70564 /* libOSDependent.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B42A1B673200D70564 /* libOSDependent.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C15E09CA2A1B675000D70564 /* libSPIRV.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B62A1B673200D70564 /* libSPIRV.xcframework */; };
 		C15E09CB2A1B675100D70564 /* libSPIRV.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B62A1B673200D70564 /* libSPIRV.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C17FAB8B2A1B74380020FF0B /* CitraWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8A2A1B74380020FF0B /* CitraWrapper.m */; };
+		C17FAB8D2A1B74AD0020FF0B /* EmulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */; };
+		C17FAB8F2A1B74BD0020FF0B /* RomsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8E2A1B74BD0020FF0B /* RomsView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1211,6 +1214,10 @@
 		C15E09B42A1B673200D70564 /* libOSDependent.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libOSDependent.xcframework; sourceTree = "<group>"; };
 		C15E09B52A1B673200D70564 /* libOGLCompiler.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libOGLCompiler.xcframework; sourceTree = "<group>"; };
 		C15E09B62A1B673200D70564 /* libSPIRV.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libSPIRV.xcframework; sourceTree = "<group>"; };
+		C17FAB892A1B74380020FF0B /* CitraWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CitraWrapper.h; sourceTree = "<group>"; };
+		C17FAB8A2A1B74380020FF0B /* CitraWrapper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CitraWrapper.m; sourceTree = "<group>"; };
+		C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationView.swift; sourceTree = "<group>"; };
+		C17FAB8E2A1B74BD0020FF0B /* RomsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RomsView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1270,9 +1277,12 @@
 			isa = PBXGroup;
 			children = (
 				C15DC1022A1B41FD0053B8EA /* citra_core */,
+				C17FAB882A1B74130020FF0B /* citra_wrapper */,
 				C15DC0D82A1B40D00053B8EA /* externals */,
 				C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */,
 				C15DC0CC2A1B40C00053B8EA /* ContentView.swift */,
+				C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */,
+				C17FAB8E2A1B74BD0020FF0B /* RomsView.swift */,
 				C15DC0CE2A1B40C10053B8EA /* Assets.xcassets */,
 				C15DC0D02A1B40C10053B8EA /* Preview Content */,
 			);
@@ -2488,6 +2498,15 @@
 			path = emuThreeDS/externals/source/cryptopp;
 			sourceTree = SOURCE_ROOT;
 		};
+		C17FAB882A1B74130020FF0B /* citra_wrapper */ = {
+			isa = PBXGroup;
+			children = (
+				C17FAB892A1B74380020FF0B /* CitraWrapper.h */,
+				C17FAB8A2A1B74380020FF0B /* CitraWrapper.m */,
+			);
+			path = citra_wrapper;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2611,6 +2630,7 @@
 				C15DC42E2A1B438B0053B8EA /* boss_u.cpp in Sources */,
 				C15DC7762A1B4B2D0053B8EA /* common.cpp in Sources */,
 				C15E099B2A1B5D9700D70564 /* blake2.cpp in Sources */,
+				C17FAB8D2A1B74AD0020FF0B /* EmulationView.swift in Sources */,
 				C15DC4C02A1B438B0053B8EA /* loader.cpp in Sources */,
 				C15DC14C2A1B421F0053B8EA /* ffmpeg_decoder.cpp in Sources */,
 				C15DC4BA2A1B438B0053B8EA /* gateway_cheat.cpp in Sources */,
@@ -2941,7 +2961,9 @@
 				C15DC4022A1B438B0053B8EA /* mint.cpp in Sources */,
 				C15E09362A1B5D9700D70564 /* regtest1.cpp in Sources */,
 				C15DC4512A1B438B0053B8EA /* cam_c.cpp in Sources */,
+				C17FAB8F2A1B74BD0020FF0B /* RomsView.swift in Sources */,
 				C15DC41E2A1B438B0053B8EA /* am_net.cpp in Sources */,
+				C17FAB8B2A1B74380020FF0B /* CitraWrapper.m in Sources */,
 				C15E08F32A1B5D9700D70564 /* pubkey.cpp in Sources */,
 				C15DC4B62A1B438B0053B8EA /* backend.cpp in Sources */,
 				C15DC7B12A1B4FCB0053B8EA /* lodepng.cpp in Sources */,

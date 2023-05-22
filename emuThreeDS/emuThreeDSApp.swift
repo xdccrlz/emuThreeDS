@@ -12,6 +12,7 @@ struct emuThreeDSApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(.yellow)
         }
     }
 }
