@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #include <array>
+#include <fstream>
 #include <limits>
 #include <memory>
 #include <sstream>
@@ -14,6 +15,7 @@
 #include "common/common_paths.h"
 #include "common/file_util.h"
 #include "common/logging/log.h"
+#include "common/string_util.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -41,7 +43,6 @@
 #else
 #ifdef __APPLE__
 #include <sys/param.h>
-#include "filehandle.h"
 #endif
 #include <cctype>
 #include <cerrno>
@@ -541,7 +542,8 @@ void GetAllFilesFromNestedEntries(FSTEntry& directory, std::vector<FSTEntry>& ou
 }
 
 bool DeleteDirRecursively(const std::string& directory, unsigned int recursion) {
-    const auto callback = [recursion](u64* num_entries_out, const std::string& directory,
+    const auto callback = [recursion]([[maybe_unused]] u64* num_entries_out,
+                                      const std::string& directory,
                                       const std::string& virtual_name) -> bool {
         std::string new_path = directory + DIR_SEP_CHR + virtual_name;
 
@@ -561,7 +563,8 @@ bool DeleteDirRecursively(const std::string& directory, unsigned int recursion) 
     return true;
 }
 
-void CopyDir(const std::string& source_path, const std::string& dest_path) {
+void CopyDir([[maybe_unused]] const std::string& source_path,
+             [[maybe_unused]] const std::string& dest_path) {
 #ifndef _WIN32
     if (source_path == dest_path)
         return;
@@ -725,10 +728,8 @@ static const std::string GetUserDirectory(const std::string& envvar) {
 std::string GetSysDirectory() {
     std::string sysDir;
 
-    LOG_INFO(Common_Filesystem, "bundle = {}, document = {}", GetBundleDirectory(), FolderHandle::DocumentDirectory());
-    
 #if defined(__APPLE__)
-    sysDir = FolderHandle::DocumentDirectory(); // GetBundleDirectory();
+    sysDir = GetBundleDirectory();
     sysDir += DIR_SEP;
     sysDir += SYSDATA_DIR;
 #else
@@ -785,7 +786,7 @@ void SetUserPath(const std::string& path) {
             // paths.
             if (!FileUtil::Exists(data_dir) && !FileUtil::Exists(config_dir) &&
                 !FileUtil::Exists(cache_dir)) {
-                data_dir = FolderHandle::DocumentDirectory() + DIR_SEP;
+                data_dir = GetHomeDirectory() + DIR_SEP MACOS_EMU_DATA_DIR DIR_SEP;
                 config_dir = data_dir + CONFIG_DIR DIR_SEP;
                 cache_dir = data_dir + CACHE_DIR DIR_SEP;
             }
@@ -903,14 +904,14 @@ void SplitFilename83(const std::string& filename, std::array<char, 9>& short_nam
             short_name[7] = '1';
             break;
         }
-        short_name[j++] = toupper(letter);
+        short_name[j++] = Common::ToUpper(letter);
     }
 
     // Get extension.
     if (point != std::string::npos) {
         j = 0;
         for (char letter : filename.substr(point + 1, 3))
-            extension[j++] = toupper(letter);
+            extension[j++] = Common::ToUpper(letter);
     }
 }
 
@@ -963,7 +964,7 @@ std::string_view GetFilename(std::string_view path) {
     const auto name_index = path.find_last_of("\\/");
 
     if (name_index == std::string_view::npos) {
-        return {};
+        return path;
     }
 
     return path.substr(name_index + 1);

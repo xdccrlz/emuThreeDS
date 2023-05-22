@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 
 #include "common/alignment.h"
-#include "common/assert.h"
+#include "video_core/custom_textures/material.h"
 #include "video_core/rasterizer_cache/surface_base.h"
 #include "video_core/texture/texture_decode.h"
 
@@ -11,28 +11,33 @@ namespace VideoCore {
 
 SurfaceBase::SurfaceBase(const SurfaceParams& params) : SurfaceParams{params} {}
 
+SurfaceBase::~SurfaceBase() = default;
+
 bool SurfaceBase::CanFill(const SurfaceParams& dest_surface, SurfaceInterval fill_interval) const {
     if (type == SurfaceType::Fill && IsRegionValid(fill_interval) &&
         boost::icl::first(fill_interval) >= addr &&
         boost::icl::last_next(fill_interval) <= end && // dest_surface is within our fill range
         dest_surface.FromInterval(fill_interval).GetInterval() ==
             fill_interval) { // make sure interval is a rectangle in dest surface
-
         if (fill_size * 8 != dest_surface.GetFormatBpp()) {
             // Check if bits repeat for our fill_size
             const u32 dest_bytes_per_pixel = std::max(dest_surface.GetFormatBpp() / 8, 1u);
             std::vector<u8> fill_test(fill_size * dest_bytes_per_pixel);
 
-            for (u32 i = 0; i < dest_bytes_per_pixel; ++i)
+            for (u32 i = 0; i < dest_bytes_per_pixel; ++i) {
                 std::memcpy(&fill_test[i * fill_size], &fill_data[0], fill_size);
+            }
 
-            for (u32 i = 0; i < fill_size; ++i)
+            for (u32 i = 0; i < fill_size; ++i) {
                 if (std::memcmp(&fill_test[dest_bytes_per_pixel * i], &fill_test[0],
-                                dest_bytes_per_pixel) != 0)
+                                dest_bytes_per_pixel) != 0) {
                     return false;
+                }
+            }
 
-            if (dest_surface.GetFormatBpp() == 4 && (fill_test[0] & 0xF) != (fill_test[0] >> 4))
+            if (dest_surface.GetFormatBpp() == 4 && (fill_test[0] & 0xF) != (fill_test[0] >> 4)) {
                 return false;
+            }
         }
         return true;
     }
@@ -40,13 +45,16 @@ bool SurfaceBase::CanFill(const SurfaceParams& dest_surface, SurfaceInterval fil
 }
 
 bool SurfaceBase::CanCopy(const SurfaceParams& dest_surface, SurfaceInterval copy_interval) const {
-    SurfaceParams subrect_params = dest_surface.FromInterval(copy_interval);
+    const SurfaceParams subrect_params = dest_surface.FromInterval(copy_interval);
     ASSERT(subrect_params.GetInterval() == copy_interval);
-    if (CanSubRect(subrect_params))
-        return true;
 
-    if (CanFill(dest_surface, copy_interval))
+    if (CanSubRect(subrect_params)) {
         return true;
+    }
+
+    if (CanFill(dest_surface, copy_interval)) {
+        return true;
+    }
 
     return false;
 }
@@ -95,6 +103,27 @@ SurfaceInterval SurfaceBase::GetCopyableInterval(const SurfaceParams& params) co
         }
     }
     return result;
+}
+
+Extent SurfaceBase::RealExtent(bool scaled) {
+    const bool is_custom = IsCustom();
+    u32 real_width = width;
+    u32 real_height = height;
+    if (is_custom) {
+        real_width = material->width;
+        real_height = material->height;
+    } else if (scaled) {
+        real_width = GetScaledWidth();
+        real_height = GetScaledHeight();
+    }
+    return Extent{
+        .width = real_width,
+        .height = real_height,
+    };
+}
+
+bool SurfaceBase::HasNormalMap() const noexcept {
+    return material && material->Map(MapType::Normal) != nullptr;
 }
 
 ClearValue SurfaceBase::MakeClearValue(PAddr copy_addr, PixelFormat dst_format) {

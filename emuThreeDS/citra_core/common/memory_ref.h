@@ -3,6 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
+
 #include <memory>
 #include <span>
 #include <vector>
@@ -22,7 +23,7 @@ public:
 
 private:
     template <class Archive>
-    void serialize(Archive& ar, const unsigned int) {}
+    void serialize(Archive&, const unsigned int) {}
     friend class boost::serialization::access;
 };
 
@@ -79,7 +80,6 @@ public:
         : backing_mem(std::move(backing_mem_)), offset(0) {
         Init();
     }
-
     MemoryRef(std::shared_ptr<BackingMem> backing_mem_, u64 offset_)
         : backing_mem(std::move(backing_mem_)), offset(offset_) {
         ASSERT(offset <= backing_mem->GetSize());
@@ -94,11 +94,11 @@ public:
         return cptr;
     }
 
-    operator const u8*() const {
+    u8* GetPtr() {
         return cptr;
     }
 
-    u8* GetPtr() {
+    operator const u8*() const {
         return cptr;
     }
 
@@ -106,12 +106,12 @@ public:
         return cptr;
     }
 
-    auto GetWriteBytes(std::size_t size) {
-        return std::span{cptr, size > csize ? csize : size};
+    std::span<u8> GetWriteBytes(std::size_t size) {
+        return std::span{cptr, std::min(size, csize)};
     }
 
-    auto GetReadBytes(std::size_t size) const {
-        return std::span{cptr, size > csize ? csize : size};
+    std::span<const u8> GetReadBytes(std::size_t size) const {
+        return std::span{cptr, std::min(size, csize)};
     }
 
     std::size_t GetSize() const {

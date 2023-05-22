@@ -9,7 +9,7 @@
 namespace HostShaders {
 
 constexpr std::string_view OPENGL_PRESENT_VERT = {
-"// Copyright 2022 Citra Emulator Project\n"
+"// Copyright 2023 Citra Emulator Project\n"
 "// Licensed under GPLv2 or any later version\n"
 "// Refer to the license.txt file included.\n"
 "\n"
@@ -32,6 +32,7 @@ constexpr std::string_view OPENGL_PRESENT_VERT = {
 "    gl_Position = vec4(mat2(modelview_matrix) * vert_position + modelview_matrix[2], 0.0, 1.0);\n"
 "    frag_tex_coord = vert_tex_coord;\n"
 "}\n"
+"\n"
 
 };
 

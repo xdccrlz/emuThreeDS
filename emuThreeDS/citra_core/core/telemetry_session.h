@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <string>
-#include <string_view>
 #include "common/telemetry.h"
 
 namespace Loader {
@@ -54,7 +53,7 @@ public:
      * @param value Value for the field to add.
      */
     template <typename T>
-    void AddField(Common::Telemetry::FieldType type, std::string_view name, T value) {
+    void AddField(Common::Telemetry::FieldType type, const char* name, T value) {
         field_collection.AddField(type, name, std::move(value));
     }
 

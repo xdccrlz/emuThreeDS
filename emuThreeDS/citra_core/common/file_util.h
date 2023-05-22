@@ -6,8 +6,8 @@
 
 #include <array>
 #include <cstdio>
-#include <fstream>
 #include <functional>
+#include <ios>
 #include <limits>
 #include <optional>
 #include <string>
@@ -347,9 +347,6 @@ public:
     }
     [[nodiscard]] explicit operator bool() const {
         return IsGood();
-    }
-    [[nodiscard]] std::FILE* Handle() {
-        return m_file;
     }
 
     bool Seek(s64 off, int origin);

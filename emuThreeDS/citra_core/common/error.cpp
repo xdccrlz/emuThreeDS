@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
-// SPDX-FileCopyrightText: 2014 Citra Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2013 Dolphin Emulator Project / 2014 Citra Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #include <cstddef>
 #ifdef _WIN32
@@ -30,7 +30,7 @@ std::string NativeErrorToString(int e) {
     return ret;
 #else
     char err_str[255];
-#if (defined(__GLIBC__) && (_GNU_SOURCE || (_POSIX_C_SOURCE < 200112L && _XOPEN_SOURCE < 600))) || \
+#if defined(__GLIBC__) && (_GNU_SOURCE || (_POSIX_C_SOURCE < 200112L && _XOPEN_SOURCE < 600)) ||   \
     defined(ANDROID)
     // Thread safe (GNU-specific)
     const char* str = strerror_r(e, err_str, sizeof(err_str));

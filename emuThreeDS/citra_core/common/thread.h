@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
-// SPDX-FileCopyrightText: 2014 Citra Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2013 Dolphin Emulator Project / 2014 Citra Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #pragma once
 
@@ -31,7 +31,8 @@ public:
         is_set = false;
     }
 
-    bool WaitFor(const std::chrono::nanoseconds& time) {
+    template <class Duration>
+    bool WaitFor(const std::chrono::duration<Duration>& time) {
         std::unique_lock lk{mutex};
         if (!condvar.wait_for(lk, time, [this] { return is_set.load(); }))
             return false;

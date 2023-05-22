@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "common/math_util.h"
 #include "common/microprofile.h"
+#include "common/settings.h"
 #include "video_core/pica_state.h"
 #include "video_core/regs_framebuffer.h"
 #include "video_core/regs_pipeline.h"
@@ -14,6 +15,7 @@
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
+#include "video_core/texture/texture_decode.h"
 
 namespace Vulkan {
 
@@ -52,13 +54,15 @@ struct DrawParams {
 
 RasterizerVulkan::RasterizerVulkan(Memory::MemorySystem& memory,
                                    VideoCore::CustomTexManager& custom_tex_manager,
+                                   VideoCore::RendererBase& renderer,
                                    Frontend::EmuWindow& emu_window, const Instance& instance,
                                    Scheduler& scheduler, DescriptorManager& desc_manager,
                                    TextureRuntime& runtime, RenderpassCache& renderpass_cache)
     : RasterizerAccelerated{memory}, instance{instance}, scheduler{scheduler}, runtime{runtime},
       renderpass_cache{renderpass_cache}, desc_manager{desc_manager}, res_cache{memory,
                                                                                 custom_tex_manager,
-                                                                                runtime},
+                                                                                runtime, regs,
+                                                                                renderer},
       pipeline_cache{instance, scheduler, renderpass_cache, desc_manager},
       stream_buffer{instance, scheduler, BUFFER_USAGE, STREAM_BUFFER_SIZE},
       uniform_buffer{instance, scheduler, vk::BufferUsageFlagBits::eUniformBuffer,
@@ -123,12 +127,14 @@ RasterizerVulkan::RasterizerVulkan(Memory::MemorySystem& memory,
 }
 
 RasterizerVulkan::~RasterizerVulkan() {
-    scheduler.Finish();
     const vk::Device device = instance.GetDevice();
-
     device.destroyBufferView(texture_lf_view);
     device.destroyBufferView(texture_rg_view);
     device.destroyBufferView(texture_rgba_view);
+}
+
+void RasterizerVulkan::TickFrame() {
+    res_cache.TickFrame();
 }
 
 void RasterizerVulkan::LoadDiskResources(const std::atomic_bool& stop_loading,
@@ -458,15 +464,17 @@ bool RasterizerVulkan::Draw(bool accelerate, bool is_indexed) {
     const Framebuffer framebuffer =
         res_cache.GetFramebufferSurfaces(using_color_fb, using_depth_fb);
     const bool has_color = framebuffer.HasAttachment(SurfaceType::Color);
-    const bool has_depth_stencil = framebuffer.HasAttachment(SurfaceType::DepthStencil);
-    if (!has_color && (shadow_rendering || !has_depth_stencil)) {
+    if (!has_color && shadow_rendering) {
         return true;
     }
 
     pipeline_info.attachments.color_format = framebuffer.Format(SurfaceType::Color);
     pipeline_info.attachments.depth_format = framebuffer.Format(SurfaceType::DepthStencil);
+    if (shadow_rendering) {
+        pipeline_cache.BindStorageImage(6, framebuffer.ShadowBuffer());
+    }
 
-    const u32 res_scale = framebuffer.ResolutionScale();
+    const int res_scale = static_cast<int>(framebuffer.ResolutionScale());
     if (uniform_block_data.data.framebuffer_scale != res_scale) {
         uniform_block_data.data.framebuffer_scale = res_scale;
         uniform_block_data.dirty = true;
@@ -500,23 +508,16 @@ bool RasterizerVulkan::Draw(bool accelerate, bool is_indexed) {
     // Sync the LUTs within the texture buffer
     SyncAndUploadLUTs();
     SyncAndUploadLUTsLF();
-
-    // Sync the uniform data
     UploadUniforms(accelerate);
 
-    // Begin the renderpass
     renderpass_cache.BeginRendering(framebuffer);
-
-    // Sync the viewport
-    // Viewport can have negative offsets or larger dimensions than our framebuffer sub-rect.
-    // Enable scissor test to prevent drawing outside of the framebuffer region
     scheduler.Record([viewport = framebuffer.Viewport(),
                       scissor = framebuffer.RenderArea()](vk::CommandBuffer cmdbuf) {
         const vk::Viewport vk_viewport = {
-            .x = viewport.x,
-            .y = viewport.y,
-            .width = viewport.width,
-            .height = viewport.height,
+            .x = static_cast<f32>(viewport.x),
+            .y = static_cast<f32>(viewport.y),
+            .width = static_cast<f32>(viewport.width),
+            .height = static_cast<f32>(viewport.height),
             .minDepth = 0.f,
             .maxDepth = 1.f,
         };
@@ -547,9 +548,7 @@ bool RasterizerVulkan::Draw(bool accelerate, bool is_indexed) {
 
     vertex_batch.clear();
 
-    // Mark framebuffer surfaces as dirty
-    res_cache.InvalidateRenderTargets(framebuffer);
-
+    res_cache.InvalidateFramebuffer(framebuffer);
     return succeeded;
 }
 
@@ -586,6 +585,7 @@ void RasterizerVulkan::SyncTextureUnits(const Framebuffer& framebuffer) {
                 continue;
             }
             default:
+                UnbindSpecial();
                 break;
             }
         }
@@ -611,8 +611,9 @@ void RasterizerVulkan::BindShadowCube(const Pica::TexturingRegs::FullTextureConf
         const u32 binding = static_cast<u32>(face);
         info.physical_address = regs.texturing.GetCubePhysicalAddress(face);
 
-        Surface& surface = res_cache.GetTextureSurface(info);
-        pipeline_cache.BindStorageImage(binding, surface.ImageView());
+        const VideoCore::SurfaceId surface_id = res_cache.GetTextureSurface(info);
+        Surface& surface = res_cache.GetSurface(surface_id);
+        pipeline_cache.BindStorageImage(binding, surface.StorageView());
     }
 }
 
@@ -657,6 +658,13 @@ bool RasterizerVulkan::IsFeedbackLoop(u32 texture_index, const Framebuffer& fram
     runtime.CopyTextures(surface, temp_surface, copy);
     pipeline_cache.BindTexture(texture_index, temp_surface.ImageView(), sampler.Handle());
     return true;
+}
+
+void RasterizerVulkan::UnbindSpecial() {
+    Surface& null_surface = res_cache.GetSurface(VideoCore::NULL_SURFACE_ID);
+    for (u32 i = 0; i < 6; i++) {
+        pipeline_cache.BindStorageImage(i, null_surface.ImageView());
+    }
 }
 
 void RasterizerVulkan::NotifyFixedFunctionPicaRegisterChanged(u32 id) {
@@ -1012,7 +1020,7 @@ void RasterizerVulkan::SyncAndUploadLUTs() {
     auto [buffer, offset, invalidate] = texture_buffer.Map(max_size, sizeof(Common::Vec4f));
 
     // helper function for SyncProcTexNoiseLUT/ColorMap/AlphaMap
-    auto SyncProcTexValueLUT =
+    auto sync_proctex_value_lut =
         [this, buffer = buffer, offset = offset, invalidate = invalidate,
          &bytes_used](const std::array<Pica::State::ProcTex::ValueEntry, 128>& lut,
                       std::array<Common::Vec2f, 128>& lut_data, int& lut_offset) {
@@ -1033,22 +1041,22 @@ void RasterizerVulkan::SyncAndUploadLUTs() {
 
     // Sync the proctex noise lut
     if (uniform_block_data.proctex_noise_lut_dirty || invalidate) {
-        SyncProcTexValueLUT(proctex.noise_table, proctex_noise_lut_data,
-                            uniform_block_data.data.proctex_noise_lut_offset);
+        sync_proctex_value_lut(proctex.noise_table, proctex_noise_lut_data,
+                               uniform_block_data.data.proctex_noise_lut_offset);
         uniform_block_data.proctex_noise_lut_dirty = false;
     }
 
     // Sync the proctex color map
     if (uniform_block_data.proctex_color_map_dirty || invalidate) {
-        SyncProcTexValueLUT(proctex.color_map_table, proctex_color_map_data,
-                            uniform_block_data.data.proctex_color_map_offset);
+        sync_proctex_value_lut(proctex.color_map_table, proctex_color_map_data,
+                               uniform_block_data.data.proctex_color_map_offset);
         uniform_block_data.proctex_color_map_dirty = false;
     }
 
     // Sync the proctex alpha map
     if (uniform_block_data.proctex_alpha_map_dirty || invalidate) {
-        SyncProcTexValueLUT(proctex.alpha_map_table, proctex_alpha_map_data,
-                            uniform_block_data.data.proctex_alpha_map_offset);
+        sync_proctex_value_lut(proctex.alpha_map_table, proctex_alpha_map_data,
+                               uniform_block_data.data.proctex_alpha_map_offset);
         uniform_block_data.proctex_alpha_map_dirty = false;
     }
 

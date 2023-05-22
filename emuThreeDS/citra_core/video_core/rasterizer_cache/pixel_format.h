@@ -1,17 +1,16 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
 #pragma once
 
+#include <limits>
 #include <string_view>
 #include "core/hw/gpu.h"
 #include "video_core/regs_framebuffer.h"
 #include "video_core/regs_texturing.h"
 
 namespace VideoCore {
-
-constexpr std::size_t PIXEL_FORMAT_COUNT = 18;
 
 enum class PixelFormat : u32 {
     RGBA8 = 0,
@@ -31,20 +30,10 @@ enum class PixelFormat : u32 {
     D16 = 14,
     D24 = 16,
     D24S8 = 17,
-    Max = 18,
-    Invalid = 255,
+    MaxPixelFormat = 18,
+    Invalid = std::numeric_limits<u32>::max(),
 };
-
-enum class CustomPixelFormat : u32 {
-    RGBA8 = 0,
-    BC1 = 1,
-    BC3 = 2,
-    BC5 = 3,
-    BC7 = 4,
-    ASTC4 = 5,
-    ASTC6 = 6,
-    ASTC8 = 7,
-};
+constexpr std::size_t PIXEL_FORMAT_COUNT = static_cast<std::size_t>(PixelFormat::MaxPixelFormat);
 
 enum class SurfaceType : u32 {
     Color = 0,
@@ -55,77 +44,64 @@ enum class SurfaceType : u32 {
     Invalid = 5,
 };
 
-enum class TextureType : u32 {
+enum class TextureType : u16 {
     Texture2D = 0,
     CubeMap = 1,
 };
 
-constexpr std::array<u8, PIXEL_FORMAT_COUNT> BITS_PER_BLOCK_TABLE = {{
-    32, // RGBA8
-    24, // RGB8
-    16, // RGB5A1
-    16, // RGB565
-    16, // RGBA4
-    16, // IA8
-    16, // RG8
-    8,  // I8
-    8,  // A8
-    8,  // IA4
-    4,  // I4
-    4,  // A4
-    4,  // ETC1
-    8,  // ETC1A4
-    16, // D16
-    0,
-    24, // D24
-    32, // D24S8
+struct PixelFormatInfo {
+    SurfaceType type;
+    u32 bits_per_block;
+    u32 bytes_per_pixel;
+};
+
+/**
+ * Lookup table for querying pixel format properties (type, name, etc)
+ * @note Modern GPUs require 4 byte alignment for D24
+ * @note Texture formats are automatically converted to RGBA8
+ **/
+constexpr std::array<PixelFormatInfo, PIXEL_FORMAT_COUNT> FORMAT_MAP = {{
+    {SurfaceType::Color, 32, 4},
+    {SurfaceType::Color, 24, 3},
+    {SurfaceType::Color, 16, 2},
+    {SurfaceType::Color, 16, 2},
+    {SurfaceType::Color, 16, 2},
+    {SurfaceType::Texture, 16, 4},
+    {SurfaceType::Texture, 16, 4},
+    {SurfaceType::Texture, 8, 4},
+    {SurfaceType::Texture, 8, 4},
+    {SurfaceType::Texture, 8, 4},
+    {SurfaceType::Texture, 4, 4},
+    {SurfaceType::Texture, 4, 4},
+    {SurfaceType::Texture, 4, 4},
+    {SurfaceType::Texture, 8, 4},
+    {SurfaceType::Depth, 16, 2},
+    {SurfaceType::Invalid, 0, 0},
+    {SurfaceType::Depth, 24, 4},
+    {SurfaceType::DepthStencil, 32, 4},
 }};
 
 constexpr u32 GetFormatBpp(PixelFormat format) {
-    ASSERT(static_cast<std::size_t>(format) < BITS_PER_BLOCK_TABLE.size());
-    return BITS_PER_BLOCK_TABLE[static_cast<std::size_t>(format)];
+    const std::size_t index = static_cast<std::size_t>(format);
+    ASSERT(index < FORMAT_MAP.size());
+    return FORMAT_MAP[index].bits_per_block;
 }
 
-constexpr std::array<SurfaceType, PIXEL_FORMAT_COUNT> FORMAT_TYPE_TABLE = {{
-    SurfaceType::Color,   // RGBA8
-    SurfaceType::Color,   // RGB8
-    SurfaceType::Color,   // RGB5A1
-    SurfaceType::Color,   // RGB565
-    SurfaceType::Color,   // RGBA4
-    SurfaceType::Texture, // IA8
-    SurfaceType::Texture, // RG8
-    SurfaceType::Texture, // I8
-    SurfaceType::Texture, // A8
-    SurfaceType::Texture, // IA4
-    SurfaceType::Texture, // I4
-    SurfaceType::Texture, // A4
-    SurfaceType::Texture, // ETC1
-    SurfaceType::Texture, // ETC1A4
-    SurfaceType::Depth,   // D16
-    SurfaceType::Invalid,
-    SurfaceType::Depth,        // D24
-    SurfaceType::DepthStencil, // D24S8
-}};
+constexpr u32 GetFormatBytesPerPixel(PixelFormat format) {
+    const std::size_t index = static_cast<std::size_t>(format);
+    ASSERT(index < FORMAT_MAP.size());
+    return FORMAT_MAP[index].bytes_per_pixel;
+}
 
 constexpr SurfaceType GetFormatType(PixelFormat format) {
-    ASSERT(static_cast<std::size_t>(format) < FORMAT_TYPE_TABLE.size());
-    return FORMAT_TYPE_TABLE[static_cast<std::size_t>(format)];
+    const std::size_t index = static_cast<std::size_t>(format);
+    ASSERT(index < FORMAT_MAP.size());
+    return FORMAT_MAP[index].type;
 }
-
-constexpr u32 GetBytesPerPixel(PixelFormat format) {
-    // Modern GPUs need 4 bpp alignment for D24
-    if (format == PixelFormat::D24 || GetFormatType(format) == SurfaceType::Texture) {
-        return 4;
-    }
-
-    return GetFormatBpp(format) / 8;
-}
-
-std::string_view PixelFormatAsString(PixelFormat format);
-
-std::string_view CustomPixelFormatAsString(CustomPixelFormat format);
 
 bool CheckFormatsBlittable(PixelFormat source_format, PixelFormat dest_format);
+
+std::string_view PixelFormatAsString(PixelFormat format);
 
 PixelFormat PixelFormatFromTextureFormat(Pica::TexturingRegs::TextureFormat format);
 

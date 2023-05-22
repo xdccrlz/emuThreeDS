@@ -1,6 +1,6 @@
-// SPDX-FileCopyrightText: 2013 Dolphin Emulator Project
-// SPDX-FileCopyrightText: 2014 Citra Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2013 Dolphin Emulator Project / 2014 Citra Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #include <string>
 
@@ -133,7 +133,7 @@ void SetCurrentThreadName(const char* name) {
 #endif
 
 #if defined(_WIN32)
-void SetCurrentThreadName(const char* name) {
+void SetCurrentThreadName(const char*) {
     // Do Nothing on MingW
 }
 #endif

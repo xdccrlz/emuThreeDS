@@ -2,7 +2,6 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include <fstream>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -12,6 +11,7 @@
 #include "audio_core/lle/lle.h"
 #include "common/arch.h"
 #include "common/logging/log.h"
+#include "common/texture.h"
 #include "core/arm/arm_interface.h"
 #include "core/arm/exclusive_monitor.h"
 #if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
@@ -26,6 +26,7 @@
 #include "core/dumping/ffmpeg_backend.h"
 #endif
 #include "common/settings.h"
+#include "core/frontend/image_interface.h"
 #include "core/gdbstub/gdbstub.h"
 #include "core/global.h"
 #include "core/hle/kernel/client_port.h"
@@ -46,7 +47,7 @@
 #include "core/movie.h"
 #include "core/rpc/rpc_server.h"
 #include "network/network.h"
-#include "video_core/rasterizer_cache/custom_tex_manager.h"
+#include "video_core/custom_textures/custom_tex_manager.h"
 #include "video_core/renderer_base.h"
 #include "video_core/video_core.h"
 
@@ -73,8 +74,7 @@ System::~System() = default;
 
 System::ResultStatus System::RunLoop(bool tight_loop) {
     status = ResultStatus::Success;
-    if (std::any_of(cpu_cores.begin(), cpu_cores.end(),
-                    [](std::shared_ptr<ARM_Interface> ptr) { return ptr == nullptr; })) {
+    if (!IsPoweredOn()) {
         return ResultStatus::ErrorNotInitialized;
     }
 
@@ -113,9 +113,10 @@ System::ResultStatus System::RunLoop(bool tight_loop) {
     case Signal::Shutdown:
         return ResultStatus::ShutdownRequested;
     case Signal::Load: {
-        LOG_INFO(Core, "Begin load");
+        const u32 slot = param;
+        LOG_INFO(Core, "Begin load of slot {}", slot);
         try {
-            System::LoadState(param);
+            System::LoadState(slot);
             LOG_INFO(Core, "Load completed");
         } catch (const std::exception& e) {
             LOG_ERROR(Core, "Error loading: {}", e.what());
@@ -126,9 +127,10 @@ System::ResultStatus System::RunLoop(bool tight_loop) {
         return ResultStatus::Success;
     }
     case Signal::Save: {
-        LOG_INFO(Core, "Begin save");
+        const u32 slot = param;
+        LOG_INFO(Core, "Begin save to slot {}", slot);
         try {
-            System::SaveState(param);
+            System::SaveState(slot);
             LOG_INFO(Core, "Save completed");
         } catch (const std::exception& e) {
             LOG_ERROR(Core, "Error saving: {}", e.what());
@@ -309,16 +311,19 @@ System::ResultStatus System::Load(Frontend::EmuWindow& emu_window, const std::st
         }
     }
     kernel->SetCurrentProcess(process);
-    cheat_engine = std::make_unique<Cheats::CheatEngine>(*this);
     title_id = 0;
     if (app_loader->ReadProgramId(title_id) != Loader::ResultStatus::Success) {
         LOG_ERROR(Core, "Failed to find title id for ROM (Error {})",
                   static_cast<u32>(load_result));
     }
+    cheat_engine = std::make_unique<Cheats::CheatEngine>(title_id, *this);
     perf_stats = std::make_unique<PerfStats>(title_id);
 
     if (Settings::values.custom_textures) {
         custom_tex_manager->FindCustomTextures();
+    }
+    if (Settings::values.dump_textures) {
+        custom_tex_manager->WriteConfig();
     }
 
     status = ResultStatus::Success;
@@ -368,6 +373,7 @@ System::ResultStatus System::Init(Frontend::EmuWindow& emu_window,
         *memory, *timing, [this] { PrepareReschedule(); }, system_mode, num_cores, n3ds_mode);
 
     exclusive_monitor = MakeExclusiveMonitor(*memory, num_cores);
+    cpu_cores.reserve(num_cores);
     if (Settings::values.use_cpu_jit) {
 #if CITRA_ARCH(x86_64) || CITRA_ARCH(arm64)
         for (u32 i = 0; i < num_cores; ++i) {
@@ -402,8 +408,8 @@ System::ResultStatus System::Init(Frontend::EmuWindow& emu_window,
 
     memory->SetDSP(*dsp_core);
 
-    dsp_core->SetSink(Settings::values.sink_id.GetValue(),
-                      Settings::values.audio_device_id.GetValue());
+    dsp_core->SetSink(Settings::values.output_type.GetValue(),
+                      Settings::values.output_device.GetValue());
     dsp_core->EnableStretching(Settings::values.enable_audio_stretching.GetValue());
 
     telemetry_session = std::make_unique<Core::TelemetrySession>();
@@ -423,21 +429,17 @@ System::ResultStatus System::Init(Frontend::EmuWindow& emu_window,
     video_dumper = std::make_unique<VideoDumper::NullBackend>();
 #endif
 
+    if (!registered_image_interface) {
+        registered_image_interface = std::make_shared<Frontend::ImageInterface>();
+    }
+
     custom_tex_manager = std::make_unique<VideoCore::CustomTexManager>(*this);
 
-    VideoCore::ResultStatus result = VideoCore::Init(emu_window, secondary_window, *this);
-    if (result != VideoCore::ResultStatus::Success) {
-        switch (result) {
-        case VideoCore::ResultStatus::ErrorGenericDrivers:
-            return ResultStatus::ErrorVideoCore_ErrorGenericDrivers;
-        default:
-            return ResultStatus::ErrorVideoCore;
-        }
-    }
+    VideoCore::Init(emu_window, secondary_window, *this);
 
     LOG_DEBUG(Core, "Initialized OK");
 
-    initalized = true;
+    is_powered_on = true;
 
     return ResultStatus::Success;
 }
@@ -522,6 +524,10 @@ void System::RegisterSoftwareKeyboard(std::shared_ptr<Frontend::SoftwareKeyboard
     registered_swkbd = std::move(swkbd);
 }
 
+void System::RegisterImageInterface(std::shared_ptr<Frontend::ImageInterface> image_interface) {
+    registered_image_interface = std::move(image_interface);
+}
+
 void System::Shutdown(bool is_deserializing) {
     // Log last frame performance stats
     const auto perf_results = GetAndResetPerfStats();
@@ -535,6 +541,8 @@ void System::Shutdown(bool is_deserializing) {
                                 perf_stats ? perf_stats->GetMeanFrametime() : 0);
 
     // Shutdown emulation session
+    is_powered_on = false;
+
     VideoCore::Shutdown();
     HW::Shutdown();
     if (!is_deserializing) {
@@ -543,6 +551,7 @@ void System::Shutdown(bool is_deserializing) {
         cheat_engine.reset();
         app_loader.reset();
     }
+    custom_tex_manager.reset();
     telemetry_session.reset();
     rpc_server.reset();
     archive_manager.reset();

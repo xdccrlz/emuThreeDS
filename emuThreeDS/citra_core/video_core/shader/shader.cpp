@@ -13,6 +13,9 @@
 #include "video_core/regs_shader.h"
 #include "video_core/shader/shader.h"
 #include "video_core/shader/shader_interpreter.h"
+#if CITRA_ARCH(x86_64)
+#include "video_core/shader/shader_jit_x64.h"
+#endif // CITRA_ARCH(x86_64)
 #include "video_core/video_core.h"
 
 namespace Pica::Shader {
@@ -83,7 +86,7 @@ void UnitState::LoadInput(const ShaderRegs& config, const AttributeBuffer& input
     }
 }
 
-static void CopyRegistersToOutput(const Common::Vec4<float24>* regs, u32 mask,
+static void CopyRegistersToOutput(std::span<Common::Vec4<float24>, 16> regs, u32 mask,
                                   AttributeBuffer& buffer) {
     int output_i = 0;
     for (int reg : Common::BitSet<u32>(mask)) {
@@ -105,7 +108,7 @@ GSEmitter::~GSEmitter() {
     delete handlers;
 }
 
-void GSEmitter::Emit(Common::Vec4<float24> (&output_regs)[16]) {
+void GSEmitter::Emit(std::span<Common::Vec4<float24>, 16> output_regs) {
     ASSERT(vertex_id < 3);
     // TODO: This should be merged with UnitState::WriteOutput somehow
     CopyRegistersToOutput(output_regs, output_mask, buffer[vertex_id]);
@@ -132,14 +135,29 @@ void GSUnitState::ConfigOutput(const ShaderRegs& config) {
 
 MICROPROFILE_DEFINE(GPU_Shader, "GPU", "Shader", MP_RGB(50, 50, 240));
 
+#if CITRA_ARCH(x86_64)
+static std::unique_ptr<JitX64Engine> jit_engine;
+#endif // CITRA_ARCH(x86_64)
 static InterpreterEngine interpreter_engine;
 
 ShaderEngine* GetEngine() {
+#if CITRA_ARCH(x86_64)
+    // TODO(yuriks): Re-initialize on each change rather than being persistent
+    if (VideoCore::g_shader_jit_enabled) {
+        if (jit_engine == nullptr) {
+            jit_engine = std::make_unique<JitX64Engine>();
+        }
+        return jit_engine.get();
+    }
+#endif // CITRA_ARCH(x86_64)
+
     return &interpreter_engine;
 }
 
 void Shutdown() {
-    // no jit shader engine
+#if CITRA_ARCH(x86_64)
+    jit_engine = nullptr;
+#endif // CITRA_ARCH(x86_64)
 }
 
 } // namespace Pica::Shader

@@ -35,11 +35,10 @@ struct FormatTraits {
     vk::Format native = vk::Format::eUndefined; ///< Closest possible native format
 };
 
-/// The global Vulkan instance
 class Instance {
 public:
-    Instance(bool validation = false, bool dump_command_buffers = false);
-    Instance(Frontend::EmuWindow& window, u32 physical_device_index);
+    explicit Instance(bool validation = false, bool dump_command_buffers = false);
+    explicit Instance(Frontend::EmuWindow& window, u32 physical_device_index);
     ~Instance();
 
     /// Returns the FormatTraits struct for the provided pixel format
@@ -53,11 +52,6 @@ public:
     /// Returns the Vulkan instance
     vk::Instance GetInstance() const {
         return instance;
-    }
-
-    /// Returns the Vulkan surface
-    vk::SurfaceKHR GetSurface() const {
-        return surface;
     }
 
     /// Returns the current physical device
@@ -82,11 +76,11 @@ public:
 
     /// Retrieve queue information
     u32 GetGraphicsQueueFamilyIndex() const {
-        return graphics_queue_family_index;
+        return queue_family_index;
     }
 
     u32 GetPresentQueueFamilyIndex() const {
-        return present_queue_family_index;
+        return queue_family_index;
     }
 
     vk::Queue GetGraphicsQueue() const {
@@ -103,7 +97,13 @@ public:
     }
 
     bool UseGeometryShaders() const {
+#ifndef __ANDROID__
         return features.geometryShader;
+#else
+        // Geometry shaders are extremely expensive on tilers to avoid them at all
+        // cost even if it hurts accuracy somewhat. TODO: Make this an option
+        return false;
+#endif
     }
 
     /// Returns true if anisotropic filtering is supported
@@ -119,33 +119,6 @@ public:
     /// Returns true when VK_EXT_extended_dynamic_state is supported
     bool IsExtendedDynamicStateSupported() const {
         return extended_dynamic_state;
-    }
-
-    /// Returns true when VK_EXT_extended_dynamic_state2 is supported
-    bool IsExtendedDynamicState2Supported() const {
-        return extended_dynamic_state2;
-    }
-
-    /// Returns true when the logicOpEnable feature of VK_EXT_extended_dynamic_state3 is supported
-    bool IsExtendedDynamicState3LogicOpSupported() const {
-        return extended_dynamic_state3_logicop_enable;
-    }
-
-    /// Returns true when the colorBlendEnable feature of VK_EXT_extended_dynamic_state3 is
-    /// supported
-    bool IsExtendedDynamicState3BlendEnableSupported() const {
-        return extended_dynamic_state3_color_blend_enable;
-    }
-
-    /// Returns true when the colorBlendEquation feature of VK_EXT_extended_dynamic_state3 is
-    /// supported
-    bool IsExtendedDynamicState3BlendEqSupported() const {
-        return extended_dynamic_state3_color_blend_eq;
-    }
-
-    /// Returns true when the colorWriteMask feature of VK_EXT_extended_dynamic_state3 is supported
-    bool IsExtendedDynamicState3ColorMaskSupported() const {
-        return extended_dynamic_state3_color_write_mask;
     }
 
     /// Returns true when VK_KHR_dynamic_rendering is supported
@@ -294,11 +267,9 @@ private:
     void CollectTelemetryParameters();
 
 private:
-    static vk::DynamicLoader dl;
     vk::Device device;
     vk::PhysicalDevice physical_device;
     vk::Instance instance;
-    vk::SurfaceKHR surface;
     vk::PhysicalDeviceProperties properties;
     vk::PhysicalDeviceFeatures features;
     vk::PhysicalDeviceLimits limits;
@@ -314,18 +285,12 @@ private:
     std::array<FormatTraits, 10> custom_format_table;
     std::array<FormatTraits, 16> attrib_table;
     std::vector<std::string> available_extensions;
-    u32 present_queue_family_index{0};
-    u32 graphics_queue_family_index{0};
+    u32 queue_family_index{0};
     bool triangle_fan_supported{true};
     bool image_view_reinterpretation{true};
     u32 min_vertex_stride_alignment{1};
     bool timeline_semaphores{};
     bool extended_dynamic_state{};
-    bool extended_dynamic_state2{};
-    bool extended_dynamic_state3_logicop_enable{};
-    bool extended_dynamic_state3_color_blend_enable{};
-    bool extended_dynamic_state3_color_blend_eq{};
-    bool extended_dynamic_state3_color_write_mask{};
     bool push_descriptors{};
     bool dynamic_rendering{};
     bool custom_border_color{};

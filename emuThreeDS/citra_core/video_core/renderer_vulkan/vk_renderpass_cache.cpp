@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -31,9 +31,7 @@ RenderpassCache::~RenderpassCache() {
             }
         }
     }
-
     ClearFramebuffers();
-    device.destroyRenderPass(present_renderpass);
 }
 
 void RenderpassCache::ClearFramebuffers() {
@@ -41,11 +39,6 @@ void RenderpassCache::ClearFramebuffers() {
         instance.GetDevice().destroyFramebuffer(framebuffer);
     }
     framebuffers.clear();
-}
-
-void RenderpassCache::BeginRendering(Surface* const color, Surface* const depth_stencil,
-                                     vk::Rect2D render_area, bool do_clear, vk::ClearValue clear) {
-    return BeginRendering(Framebuffer{color, depth_stencil, render_area}, do_clear, clear);
 }
 
 void RenderpassCache::BeginRendering(const Framebuffer& framebuffer, bool do_clear,
@@ -70,7 +63,6 @@ void RenderpassCache::BeginRendering(const Framebuffer& framebuffer, bool do_cle
         new_info.depth.aspect |= vk::ImageAspectFlagBits::eStencil;
     }
 
-    // If the provided rendering context is active we are done
     if (info == new_info && rendering) {
         cmd_count++;
         return;
@@ -94,7 +86,7 @@ void RenderpassCache::DynamicRendering(const Framebuffer& framebuffer) {
         u32 cursor = 0;
         std::array<vk::RenderingAttachmentInfoKHR, 2> infos{};
 
-        const auto Prepare = [&](vk::ImageView image_view) {
+        const auto prepare = [&](vk::ImageView image_view) {
             if (!image_view) {
                 cursor++;
                 return;
@@ -110,8 +102,8 @@ void RenderpassCache::DynamicRendering(const Framebuffer& framebuffer) {
             };
         };
 
-        Prepare(info.color.image_view);
-        Prepare(info.depth.image_view);
+        prepare(info.color.image_view);
+        prepare(info.depth.image_view);
 
         const u32 color_attachment_count = info.color ? 1u : 0u;
         const vk::RenderingAttachmentInfoKHR* depth_info = info.depth ? &infos[1] : nullptr;
@@ -166,79 +158,75 @@ void RenderpassCache::EndRendering() {
     }
 
     rendering = false;
-    scheduler.Record(
-        [info = info, dynamic_rendering = dynamic_rendering](vk::CommandBuffer cmdbuf) {
-            u32 num_barriers = 0;
-            std::array<vk::ImageMemoryBarrier, 2> barriers;
-            vk::PipelineStageFlags src_stage{};
-            vk::PipelineStageFlags dst_stage{};
+    scheduler.Record([info = info,
+                      dynamic_rendering = dynamic_rendering](vk::CommandBuffer cmdbuf) {
+        u32 num_barriers = 0;
+        std::array<vk::ImageMemoryBarrier, 2> barriers;
+        vk::PipelineStageFlags src_stage{};
+        vk::PipelineStageFlags dst_stage{};
 
-            if (info.color) {
-                barriers[num_barriers++] = vk::ImageMemoryBarrier{
-                    .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eShaderRead,
-                    .oldLayout = vk::ImageLayout::eGeneral,
-                    .newLayout = vk::ImageLayout::eGeneral,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image = info.color.image,
-                    .subresourceRange{
-                        .aspectMask = vk::ImageAspectFlagBits::eColor,
-                        .baseMipLevel = 0,
-                        .levelCount = 1,
-                        .baseArrayLayer = 0,
-                        .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                    },
-                };
+        if (info.color) {
+            barriers[num_barriers++] = vk::ImageMemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+                .dstAccessMask =
+                    vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eTransferRead,
+                .oldLayout = vk::ImageLayout::eGeneral,
+                .newLayout = vk::ImageLayout::eGeneral,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = info.color.image,
+                .subresourceRange{
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
+            };
 
-                src_stage |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
-                dst_stage |= vk::PipelineStageFlagBits::eFragmentShader;
-            }
-            if (info.depth) {
-                barriers[num_barriers++] = vk::ImageMemoryBarrier{
-                    .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-                    .dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead |
-                                     vk::AccessFlagBits::eDepthStencilAttachmentWrite,
-                    .oldLayout = vk::ImageLayout::eGeneral,
-                    .newLayout = vk::ImageLayout::eGeneral,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .image = info.depth.image,
-                    .subresourceRange{
-                        .aspectMask = info.depth.aspect,
-                        .baseMipLevel = 0,
-                        .levelCount = 1,
-                        .baseArrayLayer = 0,
-                        .layerCount = VK_REMAINING_ARRAY_LAYERS,
-                    },
-                };
+            src_stage |= vk::PipelineStageFlagBits::eColorAttachmentOutput;
+            dst_stage |=
+                vk::PipelineStageFlagBits::eFragmentShader | vk::PipelineStageFlagBits::eTransfer;
+        }
+        if (info.depth) {
+            barriers[num_barriers++] = vk::ImageMemoryBarrier{
+                .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                .dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead |
+                                 vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+                .oldLayout = vk::ImageLayout::eGeneral,
+                .newLayout = vk::ImageLayout::eGeneral,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .image = info.depth.image,
+                .subresourceRange{
+                    .aspectMask = info.depth.aspect,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = VK_REMAINING_ARRAY_LAYERS,
+                },
+            };
 
-                src_stage |= vk::PipelineStageFlagBits::eEarlyFragmentTests |
-                             vk::PipelineStageFlagBits::eLateFragmentTests;
-                dst_stage |= vk::PipelineStageFlagBits::eLateFragmentTests;
-            }
-            if (dynamic_rendering) {
-                cmdbuf.endRenderingKHR();
-            } else {
-                cmdbuf.endRenderPass();
-            }
+            src_stage |= vk::PipelineStageFlagBits::eEarlyFragmentTests |
+                         vk::PipelineStageFlagBits::eLateFragmentTests;
+            dst_stage |= vk::PipelineStageFlagBits::eLateFragmentTests;
+        }
+        if (dynamic_rendering) {
+            cmdbuf.endRenderingKHR();
+        } else {
+            cmdbuf.endRenderPass();
+        }
+        if (num_barriers != 0) {
             cmdbuf.pipelineBarrier(src_stage, dst_stage, vk::DependencyFlagBits::eByRegion, 0,
                                    nullptr, 0, nullptr, num_barriers, barriers.data());
-        });
+        }
+    });
 
     // The Mali guide recommends flushing at the end of each major renderpass
     // Testing has shown this has a significant effect on rendering performance
     if (cmd_count > 20 && instance.ShouldFlush()) {
         scheduler.Flush();
         cmd_count = 0;
-    }
-}
-
-void RenderpassCache::CreatePresentRenderpass(vk::Format format) {
-    if (!present_renderpass) {
-        present_renderpass =
-            CreateRenderPass(format, vk::Format::eUndefined, vk::AttachmentLoadOp::eClear,
-                             vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferSrcOptimal);
     }
 }
 
@@ -252,8 +240,7 @@ vk::RenderPass RenderpassCache::GetRenderpass(VideoCore::PixelFormat color,
                                 ? MAX_DEPTH_FORMATS
                                 : (static_cast<u32>(depth) - 14);
 
-    ASSERT_MSG(color_index <= MAX_COLOR_FORMATS && depth_index <= MAX_DEPTH_FORMATS &&
-                   (color_index != MAX_COLOR_FORMATS || depth_index != MAX_DEPTH_FORMATS),
+    ASSERT_MSG(color_index <= MAX_COLOR_FORMATS && depth_index <= MAX_DEPTH_FORMATS,
                "Invalid color index {} and/or depth_index {}", color_index, depth_index);
 
     vk::RenderPass& renderpass = cached_renderpasses[color_index][depth_index][is_clear];

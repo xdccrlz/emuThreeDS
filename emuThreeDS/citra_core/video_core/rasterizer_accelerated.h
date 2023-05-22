@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -143,7 +143,6 @@ protected:
     Memory::MemorySystem& memory;
     Pica::Regs& regs;
 
-    VertexArrayInfo vertex_info{};
     std::vector<HardwareVertex> vertex_batch;
     bool shader_dirty = true;
 

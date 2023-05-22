@@ -3,9 +3,12 @@
 // Refer to the license.txt file included.
 
 #include <cryptopp/osrng.h>
+
+#include "common/assert.h"
 #include "common/common_types.h"
 #include "common/file_util.h"
 #include "common/logging/log.h"
+#include "common/scm_rev.h"
 #include "common/settings.h"
 #include "core/core.h"
 #include "core/telemetry_session.h"
@@ -121,7 +124,8 @@ void TelemetrySession::AddInitialInfo(Loader::AppLoader& app_loader) {
     Telemetry::AppendOSInfo(field_collection);
 
     // Log user configuration information
-    AddField(Telemetry::FieldType::UserConfig, "Audio_SinkId", Settings::values.sink_id.GetValue());
+    AddField(Telemetry::FieldType::UserConfig, "Audio_SinkId",
+             static_cast<int>(Settings::values.output_type.GetValue()));
     AddField(Telemetry::FieldType::UserConfig, "Audio_EnableAudioStretching",
              Settings::values.enable_audio_stretching.GetValue());
     AddField(Telemetry::FieldType::UserConfig, "Core_UseCpuJit",
@@ -130,8 +134,8 @@ void TelemetrySession::AddInitialInfo(Loader::AppLoader& app_loader) {
              Settings::values.resolution_factor.GetValue());
     AddField(Telemetry::FieldType::UserConfig, "Renderer_FrameLimit",
              Settings::values.frame_limit.GetValue());
-    AddField(Telemetry::FieldType::UserConfig, "Renderer_UseHwRenderer",
-             Settings::values.use_hw_renderer.GetValue());
+    AddField(Telemetry::FieldType::UserConfig, "Renderer_Backend",
+             static_cast<int>(Settings::values.graphics_api.GetValue()));
     AddField(Telemetry::FieldType::UserConfig, "Renderer_UseHwShader",
              Settings::values.use_hw_shader.GetValue());
     AddField(Telemetry::FieldType::UserConfig, "Renderer_ShadersAccurateMul",

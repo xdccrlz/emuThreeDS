@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -64,30 +64,18 @@ vk::ShaderStageFlagBits MakeShaderStage(std::size_t index) {
 
 u64 PipelineInfo::Hash(const Instance& instance) const {
     u64 info_hash = 0;
-    const auto AppendHash = [&info_hash](const auto& data) {
+    const auto append_hash = [&info_hash](const auto& data) {
         const u64 data_hash = Common::ComputeStructHash64(data);
         info_hash = Common::HashCombine(info_hash, data_hash);
     };
 
-    AppendHash(vertex_layout);
-    AppendHash(attachments);
+    append_hash(vertex_layout);
+    append_hash(attachments);
+    append_hash(blending);
 
     if (!instance.IsExtendedDynamicStateSupported()) {
-        AppendHash(rasterization);
-        AppendHash(depth_stencil);
-    }
-    if (!instance.IsExtendedDynamicState2Supported()) {
-        AppendHash(blending.logic_op);
-    }
-    if (!instance.IsExtendedDynamicState3LogicOpSupported() ||
-        !instance.IsExtendedDynamicState3BlendEnableSupported()) {
-        AppendHash(blending.blend_enable);
-    }
-    if (!instance.IsExtendedDynamicState3BlendEqSupported()) {
-        AppendHash(blending.value);
-    }
-    if (!instance.IsExtendedDynamicState3ColorMaskSupported()) {
-        AppendHash(blending.color_write_mask);
+        append_hash(rasterization);
+        append_hash(depth_stencil);
     }
 
     return info_hash;
@@ -98,7 +86,7 @@ PipelineCache::Shader::Shader(const Instance& instance) : device{instance.GetDev
 PipelineCache::Shader::Shader(const Instance& instance, vk::ShaderStageFlagBits stage,
                               std::string code)
     : Shader{instance} {
-    module = Compile(code, stage, instance.GetDevice(), ShaderOptimization::High);
+    module = Compile(code, stage, instance.GetDevice(), ShaderOptimization::Normal);
     MarkDone();
 }
 
@@ -264,21 +252,6 @@ bool PipelineCache::GraphicsPipeline::Build(bool fail_on_compile_required) {
         };
         dynamic_states.insert(dynamic_states.end(), extended.begin(), extended.end());
     }
-    if (instance.IsExtendedDynamicState2Supported()) {
-        dynamic_states.push_back(vk::DynamicState::eLogicOpEXT);
-    }
-    if (instance.IsExtendedDynamicState3LogicOpSupported()) {
-        dynamic_states.push_back(vk::DynamicState::eLogicOpEnableEXT);
-    }
-    if (instance.IsExtendedDynamicState3BlendEnableSupported()) {
-        dynamic_states.push_back(vk::DynamicState::eColorBlendEnableEXT);
-    }
-    if (instance.IsExtendedDynamicState3BlendEqSupported()) {
-        dynamic_states.push_back(vk::DynamicState::eColorBlendEquationEXT);
-    }
-    if (instance.IsExtendedDynamicState3ColorMaskSupported()) {
-        dynamic_states.push_back(vk::DynamicState::eColorWriteMaskEXT);
-    }
 
     const vk::PipelineDynamicStateCreateInfo dynamic_info = {
         .dynamicStateCount = static_cast<u32>(dynamic_states.size()),
@@ -400,8 +373,11 @@ bool PipelineCache::GraphicsPipeline::Build(bool fail_on_compile_required) {
 PipelineCache::PipelineCache(const Instance& instance, Scheduler& scheduler,
                              RenderpassCache& renderpass_cache, DescriptorManager& desc_manager)
     : instance{instance}, scheduler{scheduler}, renderpass_cache{renderpass_cache},
-      desc_manager{desc_manager}, workers{std::max(std::thread::hardware_concurrency(), 2U) - 1,
-                                          "Pipeline builder"},
+      desc_manager{desc_manager}, num_worker_threads{std::max(std::thread::hardware_concurrency(),
+                                                              2U)},
+      shader_workers{num_worker_threads, "Shader workers"}, pipeline_workers{num_worker_threads >>
+                                                                                 1,
+                                                                             "Pipeline workers"},
       trivial_vertex_shader{instance, vk::ShaderStageFlagBits::eVertex,
                             GenerateTrivialVertexShader(instance.IsShaderClipDistanceSupported())} {
 }
@@ -457,14 +433,14 @@ void PipelineCache::SaveDiskCache() {
                                                     instance.GetVendorID(), instance.GetDeviceID());
     FileUtil::IOFile cache_file{cache_file_path, "wb"};
     if (!cache_file.IsOpen()) {
-        LOG_INFO(Render_Vulkan, "Unable to open pipeline cache for writing");
+        LOG_ERROR(Render_Vulkan, "Unable to open pipeline cache for writing");
         return;
     }
 
     vk::Device device = instance.GetDevice();
     auto cache_data = device.getPipelineCacheData(pipeline_cache);
     if (!cache_file.WriteBytes(cache_data.data(), cache_data.size())) {
-        LOG_WARNING(Render_Vulkan, "Error during pipeline cache write");
+        LOG_ERROR(Render_Vulkan, "Error during pipeline cache write");
         return;
     }
 
@@ -484,9 +460,9 @@ bool PipelineCache::BindPipeline(const PipelineInfo& info, bool wait_built) {
 
     auto [it, new_pipeline] = graphics_pipelines.try_emplace(pipeline_hash);
     if (new_pipeline) {
-        it->second = std::make_unique<GraphicsPipeline>(
+        it.value() = std::make_unique<GraphicsPipeline>(
             instance, renderpass_cache, info, pipeline_cache, desc_manager.GetPipelineLayout(),
-            current_shaders, &workers);
+            current_shaders, &pipeline_workers);
     }
 
     GraphicsPipeline* const pipeline{it->second.get()};
@@ -552,10 +528,9 @@ bool PipelineCache::UseProgrammableVertexShader(const Pica::Regs& regs,
         if (new_program) {
             shader.program = std::move(program);
             const vk::Device device = instance.GetDevice();
-
-            workers.QueueWork([device, &shader] {
+            shader_workers.QueueWork([device, &shader] {
                 shader.module = Compile(shader.program, vk::ShaderStageFlagBits::eVertex, device,
-                                        ShaderOptimization::High);
+                                        ShaderOptimization::Normal);
                 shader.MarkDone();
             });
         }
@@ -592,10 +567,10 @@ bool PipelineCache::UseFixedGeometryShader(const Pica::Regs& regs) {
 
     if (new_shader) {
         const vk::Device device = instance.GetDevice();
-        workers.QueueWork([gs_config, device, &shader]() {
+        shader_workers.QueueWork([gs_config, device, &shader]() {
             const std::string code = GenerateFixedGeometryShader(gs_config);
-            shader.module =
-                Compile(code, vk::ShaderStageFlagBits::eGeometry, device, ShaderOptimization::High);
+            shader.module = Compile(code, vk::ShaderStageFlagBits::eGeometry, device,
+                                    ShaderOptimization::Normal);
             shader.MarkDone();
         });
     }
@@ -618,18 +593,15 @@ void PipelineCache::UseFragmentShader(const Pica::Regs& regs) {
     auto& shader = it->second;
 
     if (new_shader) {
-        const bool emit_spirv = Settings::values.spirv_shader_gen.GetValue();
+        const bool use_spirv = Settings::values.spirv_shader_gen.GetValue();
         const vk::Device device = instance.GetDevice();
 
-        // When using SPIR-V emit the fragment shader on the main thread
-        // since it's quite fast. This also heavily reduces flicker when
-        // using asychronous shader compilation
-        if (emit_spirv) {
+        if (use_spirv && !config.state.shadow_rendering.Value()) {
             const std::vector code = GenerateFragmentShaderSPV(config);
             shader.module = CompileSPV(code, device);
             shader.MarkDone();
         } else {
-            workers.QueueWork([config, device, &shader]() {
+            shader_workers.QueueWork([config, device, &shader]() {
                 const std::string code = GenerateFragmentShader(config);
                 shader.module = Compile(code, vk::ShaderStageFlagBits::eFragment, device,
                                         ShaderOptimization::Debug);
@@ -755,61 +727,6 @@ void PipelineCache::ApplyDynamic(const PipelineInfo& info, bool is_dirty) {
         });
     }
 
-    if (instance.IsExtendedDynamicState2Supported()) {
-        scheduler.Record(
-            [is_dirty, logic_op = info.blending.logic_op,
-             current_logic_op = current_info.blending.logic_op](vk::CommandBuffer cmdbuf) {
-                if (logic_op != current_logic_op || is_dirty) {
-                    cmdbuf.setLogicOpEXT(PicaToVK::LogicOp(logic_op));
-                }
-            });
-    }
-
-    if (instance.IsExtendedDynamicState3LogicOpSupported() && !instance.NeedsLogicOpEmulation()) {
-        scheduler.Record(
-            [is_dirty, blend_enable = info.blending.blend_enable,
-             current_blend_enable = current_info.blending.blend_enable](vk::CommandBuffer cmdbuf) {
-                if (blend_enable != current_blend_enable || is_dirty) {
-                    cmdbuf.setLogicOpEnableEXT(!blend_enable);
-                }
-            });
-    }
-    if (instance.IsExtendedDynamicState3BlendEnableSupported()) {
-        scheduler.Record(
-            [is_dirty, blend_enable = info.blending.blend_enable,
-             current_blend_enable = current_info.blending.blend_enable](vk::CommandBuffer cmdbuf) {
-                if (blend_enable != current_blend_enable || is_dirty) {
-                    cmdbuf.setColorBlendEnableEXT(0, blend_enable);
-                }
-            });
-    }
-    if (instance.IsExtendedDynamicState3BlendEqSupported()) {
-        scheduler.Record([is_dirty, blending = info.blending,
-                          current_blending = current_info.blending](vk::CommandBuffer cmdbuf) {
-            if (blending.value != current_blending.value || is_dirty) {
-                const vk::ColorBlendEquationEXT blend_info = {
-                    .srcColorBlendFactor = PicaToVK::BlendFunc(blending.src_color_blend_factor),
-                    .dstColorBlendFactor = PicaToVK::BlendFunc(blending.dst_color_blend_factor),
-                    .colorBlendOp = PicaToVK::BlendEquation(blending.color_blend_eq),
-                    .srcAlphaBlendFactor = PicaToVK::BlendFunc(blending.src_alpha_blend_factor),
-                    .dstAlphaBlendFactor = PicaToVK::BlendFunc(blending.dst_alpha_blend_factor),
-                    .alphaBlendOp = PicaToVK::BlendEquation(blending.alpha_blend_eq),
-                };
-
-                cmdbuf.setColorBlendEquationEXT(0, blend_info);
-            }
-        });
-    }
-    if (instance.IsExtendedDynamicState3ColorMaskSupported()) {
-        scheduler.Record([is_dirty, color_mask = info.blending.color_write_mask,
-                          current_color_mask =
-                              current_info.blending.color_write_mask](vk::CommandBuffer cmdbuf) {
-            if (color_mask != current_color_mask || is_dirty) {
-                cmdbuf.setColorWriteMaskEXT(0, static_cast<vk::ColorComponentFlags>(color_mask));
-            }
-        });
-    }
-
     current_info = info;
 }
 
@@ -856,7 +773,7 @@ bool PipelineCache::IsCacheValid(const u8* data, u64 size) const {
 }
 
 bool PipelineCache::EnsureDirectories() const {
-    const auto CreateDir = [](const std::string& dir) {
+    const auto create_dir = [](const std::string& dir) {
         if (!FileUtil::CreateDir(dir)) {
             LOG_ERROR(Render_Vulkan, "Failed to create directory={}", dir);
             return false;
@@ -865,8 +782,8 @@ bool PipelineCache::EnsureDirectories() const {
         return true;
     };
 
-    return CreateDir(FileUtil::GetUserPath(FileUtil::UserPath::ShaderDir)) &&
-           CreateDir(GetPipelineCacheDir());
+    return create_dir(FileUtil::GetUserPath(FileUtil::UserPath::ShaderDir)) &&
+           create_dir(GetPipelineCacheDir());
 }
 
 std::string PipelineCache::GetPipelineCacheDir() const {

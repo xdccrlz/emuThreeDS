@@ -282,11 +282,11 @@ struct FramebufferRegs {
         return 0;
     }
 
-    bool IsShadowRendering() const {
+    [[nodiscard]] bool IsShadowRendering() const {
         return output_merger.fragment_operation_mode == FragmentOperationMode::Shadow;
     }
 
-    bool HasStencil() const {
+    [[nodiscard]] bool HasStencil() const {
         return framebuffer.depth_format == DepthFormat::D24S8;
     };
 

@@ -9,19 +9,29 @@ namespace VideoCore {
 
 bool SurfaceParams::ExactMatch(const SurfaceParams& other_surface) const {
     return std::tie(other_surface.addr, other_surface.width, other_surface.height,
-                    other_surface.stride, other_surface.pixel_format, other_surface.is_tiled,
-                    other_surface.levels) ==
-               std::tie(addr, width, height, stride, pixel_format, is_tiled, levels) &&
-           pixel_format != PixelFormat::Invalid;
+                    other_surface.stride, other_surface.pixel_format, other_surface.is_tiled) ==
+               std::tie(addr, width, height, stride, pixel_format, is_tiled) &&
+           pixel_format != PixelFormat::Invalid && levels >= other_surface.levels;
 }
 
 bool SurfaceParams::CanSubRect(const SurfaceParams& sub_surface) const {
+    const u32 level = LevelOf(sub_surface.addr);
     return sub_surface.addr >= addr && sub_surface.end <= end &&
            sub_surface.pixel_format == pixel_format && pixel_format != PixelFormat::Invalid &&
            sub_surface.is_tiled == is_tiled &&
-           (sub_surface.addr - addr) % BytesInPixels(is_tiled ? 64 : 1) == 0 &&
-           (sub_surface.stride == stride || sub_surface.height <= (is_tiled ? 8u : 1u)) &&
+           (sub_surface.addr - mipmap_offsets[level]) % BytesInPixels(is_tiled ? 64 : 1) == 0 &&
+           (sub_surface.stride == (stride >> level) ||
+            sub_surface.height <= (is_tiled ? 8u : 1u)) &&
            GetSubRect(sub_surface).right <= stride;
+}
+
+bool SurfaceParams::CanReinterpret(const SurfaceParams& other_surface) {
+    return other_surface.addr >= addr && other_surface.end <= end &&
+           pixel_format != PixelFormat::Invalid && pixel_format != other_surface.pixel_format &&
+           GetFormatBpp() == other_surface.GetFormatBpp() && other_surface.is_tiled == is_tiled &&
+           other_surface.stride == stride &&
+           (other_surface.addr - addr) % BytesInPixels(is_tiled ? 64 : 1) == 0 &&
+           GetSubRect(other_surface).right <= stride;
 }
 
 bool SurfaceParams::CanExpand(const SurfaceParams& expanded_surface) const {
@@ -34,6 +44,7 @@ bool SurfaceParams::CanExpand(const SurfaceParams& expanded_surface) const {
 }
 
 bool SurfaceParams::CanTexCopy(const SurfaceParams& texcopy_params) const {
+    const SurfaceInterval copy_interval = texcopy_params.GetInterval();
     if (pixel_format == PixelFormat::Invalid || addr > texcopy_params.addr ||
         end < texcopy_params.end) {
         return false;
@@ -47,7 +58,12 @@ bool SurfaceParams::CanTexCopy(const SurfaceParams& texcopy_params) const {
                ((texcopy_params.addr - addr) % tile_stride) + texcopy_params.width <= tile_stride;
     }
 
-    return FromInterval(texcopy_params.GetInterval()).GetInterval() == texcopy_params.GetInterval();
+    const u32 target_level = LevelOf(texcopy_params.addr);
+    if ((LevelInterval(target_level) & copy_interval) != copy_interval) {
+        return false;
+    }
+
+    return FromInterval(copy_interval).GetInterval() == copy_interval;
 }
 
 void SurfaceParams::UpdateParams() {
@@ -69,7 +85,7 @@ void SurfaceParams::UpdateParams() {
     end = addr + size;
 }
 
-Rect2D SurfaceParams::GetSubRect(const SurfaceParams& sub_surface) const {
+Common::Rectangle<u32> SurfaceParams::GetSubRect(const SurfaceParams& sub_surface) const {
     const u32 level = LevelOf(sub_surface.addr);
     const u32 begin_pixel_index = PixelsInBytes(sub_surface.addr - mipmap_offsets[level]);
     ASSERT(stride == width || level == 0);
@@ -79,21 +95,19 @@ Rect2D SurfaceParams::GetSubRect(const SurfaceParams& sub_surface) const {
         const u32 x0 = (begin_pixel_index % (stride_lod * 8)) / 8;
         const u32 y0 = (begin_pixel_index / (stride_lod * 8)) * 8;
         const u32 height_lod = height >> level;
-
         // Top to bottom
-        return Rect2D(x0, height_lod - y0, x0 + sub_surface.width,
-                      height_lod - (y0 + sub_surface.height));
+        return {x0, height_lod - y0, x0 + sub_surface.width,
+                height_lod - (y0 + sub_surface.height)};
     }
 
     const u32 x0 = begin_pixel_index % stride_lod;
     const u32 y0 = begin_pixel_index / stride_lod;
     // Bottom to top
-    return Rect2D(x0, y0 + sub_surface.height, x0 + sub_surface.width, y0);
+    return {x0, y0 + sub_surface.height, x0 + sub_surface.width, y0};
 }
 
-Rect2D SurfaceParams::GetScaledSubRect(const SurfaceParams& sub_surface) const {
-    const Rect2D rect = GetSubRect(sub_surface);
-    return rect * res_scale;
+Common::Rectangle<u32> SurfaceParams::GetScaledSubRect(const SurfaceParams& sub_surface) const {
+    return GetSubRect(sub_surface) * res_scale;
 }
 
 SurfaceParams SurfaceParams::FromInterval(SurfaceInterval interval) const {
@@ -141,8 +155,8 @@ SurfaceParams SurfaceParams::FromInterval(SurfaceInterval interval) const {
     return params;
 }
 
-SurfaceInterval SurfaceParams::GetSubRectInterval(Rect2D unscaled_rect) const {
-    ASSERT(levels == 1);
+SurfaceInterval SurfaceParams::GetSubRectInterval(Common::Rectangle<u32> unscaled_rect,
+                                                  u32 level) const {
     if (unscaled_rect.GetHeight() == 0 || unscaled_rect.GetWidth() == 0) [[unlikely]] {
         return {};
     }
@@ -154,13 +168,14 @@ SurfaceInterval SurfaceParams::GetSubRectInterval(Rect2D unscaled_rect) const {
         unscaled_rect.top = Common::AlignUp(unscaled_rect.top, 8) / 8;
     }
 
-    const u32 stride_tiled = !is_tiled ? stride : stride * 8;
+    const u32 stride_tiled = (!is_tiled ? stride : stride * 8) >> level;
     const u32 pixels = (unscaled_rect.GetHeight() - 1) * stride_tiled + unscaled_rect.GetWidth();
     const u32 pixel_offset =
         stride_tiled * (!is_tiled ? unscaled_rect.bottom : (height / 8) - unscaled_rect.top) +
         unscaled_rect.left;
 
-    return {addr + BytesInPixels(pixel_offset), addr + BytesInPixels(pixel_offset + pixels)};
+    const PAddr start = mipmap_offsets[level];
+    return {start + BytesInPixels(pixel_offset), start + BytesInPixels(pixel_offset + pixels)};
 }
 
 void SurfaceParams::CalculateMipLevelOffsets() {
@@ -202,13 +217,23 @@ SurfaceInterval SurfaceParams::LevelInterval(u32 level) const {
 }
 
 u32 SurfaceParams::LevelOf(PAddr level_addr) const {
-    ASSERT(level_addr >= addr && level_addr <= end);
+    if (level_addr < addr || level_addr > end) {
+        return 0;
+    }
 
     u32 level = levels - 1;
     while (mipmap_offsets[level] > level_addr) {
         level--;
     }
     return level;
+}
+
+std::string SurfaceParams::DebugName(bool scaled, bool custom) const noexcept {
+    const u32 scaled_width = scaled ? GetScaledWidth() : width;
+    const u32 scaled_height = scaled ? GetScaledHeight() : height;
+    return fmt::format("Surface: {}x{} {} {} levels from {:#x} to {:#x} ({}{})", scaled_width,
+                       scaled_height, PixelFormatAsString(pixel_format), levels, addr, end,
+                       custom ? "custom," : "", scaled ? "scaled" : "unscaled");
 }
 
 } // namespace VideoCore

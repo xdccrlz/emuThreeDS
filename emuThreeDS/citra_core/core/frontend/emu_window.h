@@ -37,9 +37,24 @@ public:
     virtual ~TextureMailbox() = default;
 
     /**
+     * Recreate the render objects attached to this frame with the new specified width/height
+     */
+    virtual void ReloadRenderFrame(Frontend::Frame* frame, u32 width, u32 height) = 0;
+
+    /**
+     * Recreate the presentation objects attached to this frame with the new specified width/height
+     */
+    virtual void ReloadPresentFrame(Frontend::Frame* frame, u32 width, u32 height) = 0;
+
+    /**
      * Render thread calls this to get an available frame to present
      */
     virtual Frontend::Frame* GetRenderFrame() = 0;
+
+    /**
+     * Render thread calls this after draw commands are done to add to the presentation mailbox
+     */
+    virtual void ReleaseRenderFrame(Frame* frame) = 0;
 
     /**
      * Presentation thread calls this to get the latest frame available to present. If there is no
@@ -47,26 +62,6 @@ public:
      * returns nullptr
      */
     virtual Frontend::Frame* TryGetPresentFrame(int timeout_ms) = 0;
-
-    /**
-     * Recreate the render objects attached to this frame with the new specified width/height
-     */
-    virtual void ReloadRenderFrame(Frontend::Frame* frame, u32 width, u32 height) {}
-
-    /**
-     * Recreate the presentation objects attached to this frame with the new specified width/height
-     */
-    virtual void ReloadPresentFrame(Frontend::Frame* frame, u32 width, u32 height) {}
-
-    /**
-     * Render thread calls this after draw commands are done to add to the presentation mailbox
-     */
-    virtual void ReleaseRenderFrame(Frame* frame) {}
-
-    /**
-     * Presentation thread calls this after presentation to free the render frame
-     */
-    virtual void ReleasePresentFrame(Frame* frame) {}
 };
 
 /**
@@ -141,7 +136,7 @@ public:
     /// Data describing host window system information
     struct WindowSystemInfo {
         // Window system type. Determines which GL context or Vulkan WSI is used.
-        WindowSystemType type = WindowSystemType::MacOS;
+        WindowSystemType type = WindowSystemType::Headless;
 
         // Connection to a display server. This is used on X11 and Wayland platforms.
         void* display_connection = nullptr;
@@ -206,6 +201,10 @@ public:
      */
     const WindowConfig& GetActiveConfig() const {
         return active_config;
+    }
+
+    bool StrictContextRequired() const {
+        return strict_context_required;
     }
 
     /**
@@ -273,6 +272,7 @@ protected:
     }
 
     bool is_secondary{};
+    bool strict_context_required{};
     WindowSystemInfo window_info;
 
 private:
@@ -281,7 +281,8 @@ private:
      * For the request to be honored, EmuWindow implementations will usually reimplement this
      * function.
      */
-    virtual void OnMinimalClientAreaChangeRequest(std::pair<u32, u32> minimal_size) {
+    virtual void OnMinimalClientAreaChangeRequest(
+        [[maybe_unused]] std::pair<u32, u32> minimal_size) {
         // By default, ignore this request and do nothing.
     }
 

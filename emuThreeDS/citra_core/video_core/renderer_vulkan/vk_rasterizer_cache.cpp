@@ -7,4 +7,4 @@
 
 namespace VideoCore {
 template class RasterizerCache<Vulkan::Traits>;
-}
+} // namespace VideoCore

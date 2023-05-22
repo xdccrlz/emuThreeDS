@@ -1,10 +1,11 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
 #pragma once
 
 #include <bitset>
+#include <compare>
 #include "video_core/renderer_vulkan/vk_resource_pool.h"
 
 namespace Vulkan {
@@ -18,8 +19,12 @@ union DescriptorData {
     vk::DescriptorBufferInfo buffer_info;
     vk::BufferView buffer_view;
 
-    [[nodiscard]] bool operator!=(const DescriptorData& other) const noexcept {
-        return std::memcmp(this, &other, sizeof(DescriptorData)) != 0;
+    bool operator==(const DescriptorData& other) const noexcept {
+        return std::memcmp(this, &other, sizeof(DescriptorData)) == 0;
+    }
+
+    bool operator!=(const DescriptorData& other) const noexcept {
+        return !operator==(other);
     }
 };
 
@@ -30,7 +35,7 @@ class Scheduler;
 
 class DescriptorManager {
 public:
-    DescriptorManager(const Instance& instance, Scheduler& scheduler);
+    explicit DescriptorManager(const Instance& instance, Scheduler& scheduler);
     ~DescriptorManager();
 
     /// Allocates an array of descriptor sets of the provided layout

@@ -11,9 +11,10 @@
 #include "video_core/renderer_vulkan/vk_shader_util.h"
 #include "video_core/renderer_vulkan/vk_texture_runtime.h"
 
+#include "video_core/host_shaders/format_reinterpreter/vulkan_d24s8_to_rgba8_comp_spv.h"
 #include "video_core/host_shaders/full_screen_triangle_vert_spv.h"
 #include "video_core/host_shaders/vulkan_blit_depth_stencil_frag_spv.h"
-#include "video_core/host_shaders/vulkan_d32s8_to_r32_comp_spv.h"
+#include "video_core/host_shaders/vulkan_depth_to_buffer_comp_spv.h"
 
 namespace Vulkan {
 
@@ -21,6 +22,11 @@ namespace {
 struct PushConstants {
     std::array<float, 2> tex_scale;
     std::array<float, 2> tex_offset;
+};
+
+struct ComputeInfo {
+    Common::Vec2i src_offset;
+    Common::Vec2i src_extent;
 };
 
 template <u32 binding, vk::DescriptorType type, vk::ShaderStageFlagBits stage>
@@ -36,7 +42,7 @@ inline constexpr vk::DescriptorUpdateTemplateEntry TEXTURE_TEMPLATE{
     .dstArrayElement = 0,
     .descriptorCount = 1,
     .descriptorType = type,
-    .offset = sizeof(vk::DescriptorImageInfo),
+    .offset = binding * sizeof(vk::DescriptorImageInfo),
     .stride = 0,
 };
 
@@ -54,10 +60,27 @@ const std::array COMPUTE_UPDATE_TEMPLATES = {
     TEXTURE_TEMPLATE<1, vk::DescriptorType::eSampledImage>,
     TEXTURE_TEMPLATE<2, vk::DescriptorType::eStorageImage>,
 };
+constexpr std::array COMPUTE_BUFFER_DESCRIPTOR_SET_BINDINGS = {
+    TEXTURE_DESC_LAYOUT<0, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eCompute>,
+    TEXTURE_DESC_LAYOUT<1, vk::DescriptorType::eCombinedImageSampler,
+                        vk::ShaderStageFlagBits::eCompute>,
+    TEXTURE_DESC_LAYOUT<2, vk::DescriptorType::eStorageBuffer, vk::ShaderStageFlagBits::eCompute>,
+};
+constexpr vk::DescriptorSetLayoutCreateInfo COMPUTE_BUFFER_DESCRIPTOR_SET_LAYOUT_CREATE_INFO{
+    .bindingCount = static_cast<u32>(COMPUTE_BUFFER_DESCRIPTOR_SET_BINDINGS.size()),
+    .pBindings = COMPUTE_BUFFER_DESCRIPTOR_SET_BINDINGS.data(),
+};
+const std::array COMPUTE_BUFFER_UPDATE_TEMPLATES = {
+    TEXTURE_TEMPLATE<0, vk::DescriptorType::eCombinedImageSampler>,
+    TEXTURE_TEMPLATE<1, vk::DescriptorType::eCombinedImageSampler>,
+    TEXTURE_TEMPLATE<2, vk::DescriptorType::eStorageBuffer>,
+};
+
 inline constexpr vk::PushConstantRange COMPUTE_PUSH_CONSTANT_RANGE{
     .stageFlags = vk::ShaderStageFlagBits::eCompute,
     .offset = 0,
-    .size = sizeof(Common::Vec2i),
+    .size = 2 * sizeof(Common::Vec2i),
 };
 
 constexpr std::array TWO_TEXTURES_DESCRIPTOR_SET_LAYOUT_BINDINGS{
@@ -177,7 +200,7 @@ inline constexpr vk::SamplerCreateInfo SAMPLER_CREATE_INFO{
     .minLod = 0.0f,
     .maxLod = 0.0f,
     .borderColor = vk::BorderColor::eFloatOpaqueWhite,
-    .unnormalizedCoordinates = VK_TRUE,
+    .unnormalizedCoordinates = VK_FALSE,
 };
 
 constexpr vk::PipelineLayoutCreateInfo PipelineLayoutCreateInfo(
@@ -232,37 +255,51 @@ BlitHelper::BlitHelper(const Instance& instance_, Scheduler& scheduler_,
       renderpass_cache{renderpass_cache_}, device{instance.GetDevice()},
       compute_descriptor_layout{
           device.createDescriptorSetLayout(COMPUTE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)},
+      compute_buffer_descriptor_layout{
+          device.createDescriptorSetLayout(COMPUTE_BUFFER_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)},
       two_textures_descriptor_layout{
           device.createDescriptorSetLayout(TWO_TEXTURES_DESCRIPTOR_SET_LAYOUT_CREATE_INFO)},
       compute_update_template{device.createDescriptorUpdateTemplate(
           DescriptorUpdateTemplateCreateInfo(COMPUTE_UPDATE_TEMPLATES, compute_descriptor_layout))},
+      compute_buffer_update_template{
+          device.createDescriptorUpdateTemplate(DescriptorUpdateTemplateCreateInfo(
+              COMPUTE_BUFFER_UPDATE_TEMPLATES, compute_buffer_descriptor_layout))},
       two_textures_update_template{
           device.createDescriptorUpdateTemplate(DescriptorUpdateTemplateCreateInfo(
               TWO_TEXTURES_UPDATE_TEMPLATES, two_textures_descriptor_layout))},
       compute_pipeline_layout{
           device.createPipelineLayout(PipelineLayoutCreateInfo(&compute_descriptor_layout, true))},
+      compute_buffer_pipeline_layout{device.createPipelineLayout(
+          PipelineLayoutCreateInfo(&compute_buffer_descriptor_layout, true))},
       two_textures_pipeline_layout{
           device.createPipelineLayout(PipelineLayoutCreateInfo(&two_textures_descriptor_layout))},
       full_screen_vert{CompileSPV(FULL_SCREEN_TRIANGLE_VERT_SPV, device)},
-      copy_d24s8_to_r32_comp{CompileSPV(VULKAN_D32S8_TO_R32_COMP_SPV, device)},
+      d24s8_to_rgba8_comp{CompileSPV(VULKAN_D24S8_TO_RGBA8_COMP_SPV, device)},
+      depth_to_buffer_comp{CompileSPV(VULKAN_DEPTH_TO_BUFFER_COMP_SPV, device)},
       blit_depth_stencil_frag{CompileSPV(VULKAN_BLIT_DEPTH_STENCIL_FRAG_SPV, device)},
+      d24s8_to_rgba8_pipeline{MakeComputePipeline(d24s8_to_rgba8_comp, compute_pipeline_layout)},
+      depth_to_buffer_pipeline{
+          MakeComputePipeline(depth_to_buffer_comp, compute_buffer_pipeline_layout)},
       depth_blit_pipeline{MakeDepthStencilBlitPipeline()},
       linear_sampler{device.createSampler(SAMPLER_CREATE_INFO<vk::Filter::eLinear>)},
-      nearest_sampler{device.createSampler(SAMPLER_CREATE_INFO<vk::Filter::eNearest>)} {
-    MakeComputePipelines();
-}
+      nearest_sampler{device.createSampler(SAMPLER_CREATE_INFO<vk::Filter::eNearest>)} {}
 
 BlitHelper::~BlitHelper() {
     device.destroyPipelineLayout(compute_pipeline_layout);
+    device.destroyPipelineLayout(compute_buffer_pipeline_layout);
     device.destroyPipelineLayout(two_textures_pipeline_layout);
     device.destroyDescriptorUpdateTemplate(compute_update_template);
+    device.destroyDescriptorUpdateTemplate(compute_buffer_update_template);
     device.destroyDescriptorUpdateTemplate(two_textures_update_template);
     device.destroyDescriptorSetLayout(compute_descriptor_layout);
     device.destroyDescriptorSetLayout(two_textures_descriptor_layout);
+    device.destroyDescriptorSetLayout(compute_buffer_descriptor_layout);
     device.destroyShaderModule(full_screen_vert);
-    device.destroyShaderModule(copy_d24s8_to_r32_comp);
+    device.destroyShaderModule(d24s8_to_rgba8_comp);
+    device.destroyShaderModule(depth_to_buffer_comp);
     device.destroyShaderModule(blit_depth_stencil_frag);
-    device.destroyPipeline(copy_d24s8_to_r32_pipeline);
+    device.destroyPipeline(depth_to_buffer_pipeline);
+    device.destroyPipeline(d24s8_to_rgba8_pipeline);
     device.destroyPipeline(depth_blit_pipeline);
     device.destroySampler(linear_sampler);
     device.destroySampler(nearest_sampler);
@@ -331,7 +368,8 @@ bool BlitHelper::BlitDepthStencil(Surface& source, Surface& dest,
     vk::DescriptorSet set = desc_manager.AllocateSet(two_textures_descriptor_layout);
     device.updateDescriptorSetWithTemplate(set, two_textures_update_template, textures[0]);
 
-    renderpass_cache.BeginRendering(nullptr, &dest, dst_render_area);
+    const Framebuffer framebuffer{nullptr, &dest, dst_render_area};
+    renderpass_cache.BeginRendering(framebuffer);
     scheduler.Record([blit, set, this](vk::CommandBuffer cmdbuf) {
         const vk::PipelineLayout layout = two_textures_pipeline_layout;
 
@@ -344,8 +382,8 @@ bool BlitHelper::BlitDepthStencil(Surface& source, Surface& dest,
     return true;
 }
 
-void BlitHelper::BlitD24S8ToR32(Surface& source, Surface& dest,
-                                const VideoCore::TextureBlit& blit) {
+bool BlitHelper::ConvertDS24S8ToRGBA8(Surface& source, Surface& dest,
+                                      const VideoCore::TextureBlit& blit) {
     const std::array textures = {
         vk::DescriptorImageInfo{
             .imageView = source.DepthView(),
@@ -444,7 +482,7 @@ void BlitHelper::BlitD24S8ToR32(Surface& source, Surface& dest,
 
         cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, compute_pipeline_layout, 0, set,
                                   {});
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, copy_d24s8_to_r32_pipeline);
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, d24s8_to_rgba8_pipeline);
 
         const auto src_offset = Common::MakeVec(blit.src_rect.left, blit.src_rect.bottom);
         cmdbuf.pushConstants(compute_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0,
@@ -458,19 +496,107 @@ void BlitHelper::BlitD24S8ToR32(Surface& source, Surface& dest,
                                    vk::PipelineStageFlagBits::eTransfer,
                                vk::DependencyFlagBits::eByRegion, {}, {}, post_barriers);
     });
+    return true;
 }
 
-void BlitHelper::MakeComputePipelines() {
+bool BlitHelper::DepthToBuffer(Surface& source, vk::Buffer buffer,
+                               const VideoCore::BufferTextureCopy& copy) {
+    std::array<DescriptorData, 3> textures{};
+    textures[0].image_info = vk::DescriptorImageInfo{
+        .sampler = nearest_sampler,
+        .imageView = source.DepthView(),
+        .imageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+    };
+    textures[1].image_info = vk::DescriptorImageInfo{
+        .sampler = nearest_sampler,
+        .imageView = source.StencilView(),
+        .imageLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+    };
+    textures[2].buffer_info = vk::DescriptorBufferInfo{
+        .buffer = buffer,
+        .offset = copy.buffer_offset,
+        .range = copy.buffer_size,
+    };
+
+    vk::DescriptorSet set = desc_manager.AllocateSet(compute_buffer_descriptor_layout);
+    device.updateDescriptorSetWithTemplate(set, compute_buffer_update_template, textures[0]);
+
+    renderpass_cache.EndRendering();
+    scheduler.Record([this, set, copy, src_image = source.Image(),
+                      extent = source.RealExtent(false)](vk::CommandBuffer cmdbuf) {
+        const vk::ImageMemoryBarrier pre_barrier = {
+            .srcAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite,
+            .dstAccessMask = vk::AccessFlagBits::eShaderRead,
+            .oldLayout = vk::ImageLayout::eGeneral,
+            .newLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = src_image,
+            .subresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        const vk::ImageMemoryBarrier post_barrier = {
+            .srcAccessMask = vk::AccessFlagBits::eShaderRead,
+            .dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentWrite |
+                             vk::AccessFlagBits::eDepthStencilAttachmentRead,
+            .oldLayout = vk::ImageLayout::eDepthStencilReadOnlyOptimal,
+            .newLayout = vk::ImageLayout::eGeneral,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = src_image,
+            .subresourceRange{
+                .aspectMask = vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil,
+                .baseMipLevel = 0,
+                .levelCount = VK_REMAINING_MIP_LEVELS,
+                .baseArrayLayer = 0,
+                .layerCount = VK_REMAINING_ARRAY_LAYERS,
+            },
+        };
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eEarlyFragmentTests |
+                                   vk::PipelineStageFlagBits::eLateFragmentTests,
+                               vk::PipelineStageFlagBits::eComputeShader,
+                               vk::DependencyFlagBits::eByRegion, {}, {}, pre_barrier);
+
+        cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eCompute, compute_buffer_pipeline_layout,
+                                  0, set, {});
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, depth_to_buffer_pipeline);
+
+        const ComputeInfo info = {
+            .src_offset = Common::Vec2i{static_cast<int>(copy.texture_rect.left),
+                                        static_cast<int>(copy.texture_rect.bottom)},
+            .src_extent =
+                Common::Vec2i{static_cast<int>(extent.width), static_cast<int>(extent.height)},
+        };
+        cmdbuf.pushConstants(compute_buffer_pipeline_layout, vk::ShaderStageFlagBits::eCompute, 0,
+                             sizeof(ComputeInfo), &info);
+
+        cmdbuf.dispatch(copy.texture_rect.GetWidth() / 8, copy.texture_rect.GetHeight() / 8, 1);
+
+        cmdbuf.pipelineBarrier(vk::PipelineStageFlagBits::eComputeShader,
+                               vk::PipelineStageFlagBits::eEarlyFragmentTests |
+                                   vk::PipelineStageFlagBits::eLateFragmentTests |
+                                   vk::PipelineStageFlagBits::eTransfer,
+                               vk::DependencyFlagBits::eByRegion, {}, {}, post_barrier);
+    });
+    return true;
+}
+
+vk::Pipeline BlitHelper::MakeComputePipeline(vk::ShaderModule shader, vk::PipelineLayout layout) {
     const vk::ComputePipelineCreateInfo compute_info = {
-        .stage = MakeStages(copy_d24s8_to_r32_comp),
-        .layout = compute_pipeline_layout,
+        .stage = MakeStages(shader),
+        .layout = layout,
     };
 
     if (const auto result = device.createComputePipeline({}, compute_info);
         result.result == vk::Result::eSuccess) {
-        copy_d24s8_to_r32_pipeline = result.value;
+        return result.value;
     } else {
-        LOG_CRITICAL(Render_Vulkan, "D24S8->R32 compute pipeline creation failed!");
+        LOG_CRITICAL(Render_Vulkan, "Compute pipeline creation failed!");
         UNREACHABLE();
     }
 }

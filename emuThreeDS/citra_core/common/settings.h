@@ -10,13 +10,17 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "audio_core/input_details.h"
+#include "audio_core/sink_details.h"
 #include "common/common_types.h"
 #include "core/hle/service/cam/cam_params.h"
 
 namespace Settings {
 
 enum class GraphicsAPI {
-    Vulkan = 0
+    Software = 0,
+    OpenGL = 1,
+    Vulkan = 2,
 };
 
 enum class InitClock : u32 {
@@ -41,12 +45,6 @@ enum class LayoutOption : u32 {
     MobileLandscape,
 };
 
-enum class MicInputType : u32 {
-    None = 0,
-    Real = 1,
-    Static = 2,
-};
-
 enum class StereoRenderOption : u32 {
     Off = 0,
     SideBySide = 1,
@@ -67,6 +65,15 @@ enum class AudioEmulation : u32 {
     HLE = 0,
     LLE = 1,
     LLEMultithreaded = 2,
+};
+
+enum class TextureFilter : u32 {
+    None = 0,
+    Anime4K = 1,
+    Bicubic = 2,
+    NearestNeighbor = 3,
+    ScaleForce = 4,
+    xBRZ = 5,
 };
 
 namespace NativeButton {
@@ -419,24 +426,25 @@ struct Values {
     Setting<bool> allow_plugin_loader{true, "allow_plugin_loader"};
 
     // Renderer
-    SwitchableSetting<GraphicsAPI> graphics_api{GraphicsAPI::Vulkan, "graphics_api"};
+    SwitchableSetting<GraphicsAPI, true> graphics_api{GraphicsAPI::OpenGL, GraphicsAPI::Software,
+                                                      GraphicsAPI::Vulkan, "graphics_api"};
     SwitchableSetting<u32> physical_device{0, "physical_device"};
+    Setting<bool> use_gles{false, "use_gles"};
     Setting<bool> renderer_debug{false, "renderer_debug"};
     Setting<bool> dump_command_buffers{false, "dump_command_buffers"};
     SwitchableSetting<bool> spirv_shader_gen{true, "spirv_shader_gen"};
     SwitchableSetting<bool> async_shader_compilation{false, "async_shader_compilation"};
-    SwitchableSetting<bool> use_hw_renderer{true, "use_hw_renderer"};
+    SwitchableSetting<bool> async_presentation{true, "async_presentation"};
     SwitchableSetting<bool> use_hw_shader{true, "use_hw_shader"};
-    SwitchableSetting<bool> separable_shader{false, "use_separable_shader"};
     SwitchableSetting<bool> use_disk_shader_cache{true, "use_disk_shader_cache"};
     SwitchableSetting<bool> shaders_accurate_mul{true, "shaders_accurate_mul"};
     SwitchableSetting<bool> use_vsync_new{true, "use_vsync_new"};
     Setting<bool> use_shader_jit{true, "use_shader_jit"};
-    SwitchableSetting<u16, true> resolution_factor{1, 0, 10, "resolution_factor"};
+    SwitchableSetting<u32, true> resolution_factor{1, 0, 10, "resolution_factor"};
     SwitchableSetting<u16, true> frame_limit{100, 0, 1000, "frame_limit"};
-    SwitchableSetting<std::string> texture_filter_name{"none", "texture_filter_name"};
+    SwitchableSetting<TextureFilter> texture_filter{TextureFilter::None, "texture_filter"};
 
-    SwitchableSetting<LayoutOption> layout_option{LayoutOption::MobilePortrait, "layout_option"};
+    SwitchableSetting<LayoutOption> layout_option{LayoutOption::Default, "layout_option"};
     SwitchableSetting<bool> swap_screen{false, "swap_screen"};
     SwitchableSetting<bool> upright_screen{false, "upright_screen"};
     SwitchableSetting<float, true> large_screen_proportion{4.f, 1.f, 16.f,
@@ -452,16 +460,16 @@ struct Values {
     Setting<u16> custom_bottom_bottom{480, "custom_bottom_bottom"};
     Setting<u16> custom_second_layer_opacity{100, "custom_second_layer_opacity"};
 
-    SwitchableSetting<double> bg_red{0.f, "bg_red"};
-    SwitchableSetting<double> bg_green{0.f, "bg_green"};
-    SwitchableSetting<double> bg_blue{0.f, "bg_blue"};
+    SwitchableSetting<float> bg_red{0.f, "bg_red"};
+    SwitchableSetting<float> bg_green{0.f, "bg_green"};
+    SwitchableSetting<float> bg_blue{0.f, "bg_blue"};
 
     SwitchableSetting<StereoRenderOption> render_3d{StereoRenderOption::Off, "render_3d"};
     SwitchableSetting<u32> factor_3d{0, "factor_3d"};
     SwitchableSetting<MonoRenderOption> mono_render_option{MonoRenderOption::LeftEye,
                                                            "mono_render_option"};
 
-    Setting<s32> cardboard_screen_size{85, "cardboard_screen_size"};
+    Setting<u32> cardboard_screen_size{85, "cardboard_screen_size"};
     Setting<s32> cardboard_x_shift{0, "cardboard_x_shift"};
     Setting<s32> cardboard_y_shift{0, "cardboard_y_shift"};
 
@@ -472,16 +480,17 @@ struct Values {
     SwitchableSetting<bool> dump_textures{false, "dump_textures"};
     SwitchableSetting<bool> custom_textures{false, "custom_textures"};
     SwitchableSetting<bool> preload_textures{false, "preload_textures"};
+    SwitchableSetting<bool> async_custom_loading{true, "async_custom_loading"};
 
     // Audio
     bool audio_muted;
     SwitchableSetting<AudioEmulation> audio_emulation{AudioEmulation::HLE, "audio_emulation"};
-    Setting<std::string> sink_id{"auto", "output_engine"};
     SwitchableSetting<bool> enable_audio_stretching{true, "enable_audio_stretching"};
-    Setting<std::string> audio_device_id{"auto", "output_device"};
     SwitchableSetting<float, true> volume{1.f, 0.f, 1.f, "volume"};
-    Setting<MicInputType> mic_input_type{MicInputType::None, "mic_input_type"};
-    Setting<std::string> mic_input_device{"Default", "mic_input_device"};
+    Setting<AudioCore::SinkType> output_type{AudioCore::SinkType::CoreAudio, "output_type"};
+    Setting<std::string> output_device{"auto", "output_device"};
+    Setting<AudioCore::InputType> input_type{AudioCore::InputType::Auto, "input_type"};
+    Setting<std::string> input_device{"auto", "input_device"};
 
     // Camera
     std::array<std::string, Service::CAM::NumCameras> camera_name;
@@ -490,13 +499,12 @@ struct Values {
 
     // Debugging
     bool record_frame_times;
-    bool use_hle;
     std::unordered_map<std::string, bool> lle_modules;
     Setting<bool> use_gdbstub{false, "use_gdbstub"};
     Setting<u16> gdbstub_port{24689, "gdbstub_port"};
 
     // Miscellaneous
-    Setting<std::string> log_filter{"*:Debug", "log_filter"};
+    Setting<std::string> log_filter{"*:Info", "log_filter"};
 
     // Video Dumping
     std::string output_format;

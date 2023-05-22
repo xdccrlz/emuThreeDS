@@ -80,8 +80,6 @@ static bool IsWithinTouchscreen(const Layout::FramebufferLayout& layout, unsigne
                   framebuffer_x < layout.cardboard.bottom_screen_right_eye +
                                       layout.bottom_screen.GetWidth() + (layout.width / 2))));
     } else {
-        printf("bst %i, bsb %i, bsl %i, bsr %i\n", layout.bottom_screen.top, layout.bottom_screen.bottom, layout.bottom_screen.left, layout.bottom_screen.right);
-        
         return (framebuffer_y >= layout.bottom_screen.top &&
                 framebuffer_y < layout.bottom_screen.bottom &&
                 framebuffer_x >= layout.bottom_screen.left &&
@@ -121,10 +119,8 @@ void EmuWindow::CreateTouchState() {
 }
 
 bool EmuWindow::TouchPressed(unsigned framebuffer_x, unsigned framebuffer_y) {
-    if (!IsWithinTouchscreen(framebuffer_layout, framebuffer_x, framebuffer_y)) {
-        printf("tap not in touchscreen\n");
+    if (!IsWithinTouchscreen(framebuffer_layout, framebuffer_x, framebuffer_y))
         return false;
-    }
 
     if (framebuffer_x >= framebuffer_layout.width / 2) {
         if (Settings::values.render_3d.GetValue() == Settings::StereoRenderOption::SideBySide)
@@ -177,20 +173,19 @@ void EmuWindow::TouchMoved(unsigned framebuffer_x, unsigned framebuffer_y) {
 void EmuWindow::UpdateCurrentFramebufferLayout(unsigned width, unsigned height,
                                                bool is_portrait_mode) {
     Layout::FramebufferLayout layout;
-    const auto layout_option = Settings::values.layout_option;
-    const auto min_size = Layout::GetMinimumSizeFromLayout(
-        layout_option.GetValue(), Settings::values.upright_screen.GetValue());
+
+    // If in portrait mode, only the MobilePortrait option really makes sense
+    const Settings::LayoutOption layout_option = is_portrait_mode
+                                                     ? Settings::LayoutOption::MobilePortrait
+                                                     : Settings::values.layout_option.GetValue();
+    const auto min_size =
+        Layout::GetMinimumSizeFromLayout(layout_option, Settings::values.upright_screen.GetValue());
 
     if (Settings::values.custom_layout.GetValue() == true) {
         layout = Layout::CustomFrameLayout(width, height, Settings::values.swap_screen.GetValue());
     } else {
         width = std::max(width, min_size.first);
         height = std::max(height, min_size.second);
-
-        // If in portrait mode, only the MobilePortrait option really makes sense
-        const Settings::LayoutOption layout_option =
-            is_portrait_mode ? Settings::LayoutOption::MobilePortrait
-                             : Settings::values.layout_option.GetValue();
 
         switch (layout_option) {
         case Settings::LayoutOption::SingleScreen:

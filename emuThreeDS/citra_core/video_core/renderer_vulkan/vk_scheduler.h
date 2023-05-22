@@ -1,17 +1,13 @@
-// SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2019 yuzu Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #pragma once
 
-#include <atomic>
-#include <condition_variable>
-#include <cstddef>
 #include <memory>
 #include <utility>
-#include <queue>
 #include "common/alignment.h"
 #include "common/common_funcs.h"
-#include "common/common_types.h"
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "video_core/renderer_vulkan/vk_master_semaphore.h"
@@ -84,25 +80,22 @@ public:
         return False(state & flag);
     }
 
-    /// Returns the mutex used to synchronize queue access
-    [[nodiscard]] std::mutex& QueueMutex() noexcept {
-        return queue_mutex;
-    }
-
     /// Returns the current command buffer tick.
     [[nodiscard]] u64 CurrentTick() const noexcept {
-        return master_semaphore.CurrentTick();
+        return master_semaphore->CurrentTick();
     }
 
     /// Returns true when a tick has been triggered by the GPU.
     [[nodiscard]] bool IsFree(u64 tick) const noexcept {
-        return master_semaphore.IsFree(tick);
+        return master_semaphore->IsFree(tick);
     }
 
     /// Returns the master timeline semaphore.
-    [[nodiscard]] MasterSemaphore& GetMasterSemaphore() noexcept {
-        return master_semaphore;
+    [[nodiscard]] MasterSemaphore* GetMasterSemaphore() noexcept {
+        return master_semaphore.get();
     }
+
+    std::mutex queue_mutex;
 
 private:
     class Command {
@@ -200,7 +193,7 @@ private:
 private:
     const Instance& instance;
     RenderpassCache& renderpass_cache;
-    MasterSemaphore master_semaphore;
+    std::unique_ptr<MasterSemaphore> master_semaphore;
     CommandPool command_pool;
     std::unique_ptr<CommandChunk> chunk;
     std::queue<std::unique_ptr<CommandChunk>> work_queue;
@@ -209,7 +202,6 @@ private:
     StateFlags state{};
     std::mutex execution_mutex;
     std::mutex reserve_mutex;
-    std::mutex queue_mutex;
     std::condition_variable_any event_cv;
     std::jthread worker_thread;
     bool use_worker_thread;

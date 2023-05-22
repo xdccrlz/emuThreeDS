@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -250,6 +250,7 @@ private:
     Id texture_buffer_lut_lf_id{};
     Id texture_buffer_lut_rg_id{};
     Id texture_buffer_lut_rgba_id{};
+    Id shadow_buffer_id{};
     Id shadow_texture_px_id{};
     Id shadow_texture_nx_id{};
     Id shadow_texture_py_id{};

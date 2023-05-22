@@ -9,7 +9,7 @@
 namespace HostShaders {
 
 constexpr std::string_view OPENGL_PRESENT_INTERLACED_FRAG = {
-"// Copyright 2022 Citra Emulator Project\n"
+"// Copyright 2023 Citra Emulator Project\n"
 "// Licensed under GPLv2 or any later version\n"
 "// Refer to the license.txt file included.\n"
 "\n"
@@ -31,6 +31,7 @@ constexpr std::string_view OPENGL_PRESENT_INTERLACED_FRAG = {
 "    else\n"
 "        color = texture(color_texture_r, frag_tex_coord);\n"
 "}\n"
+"\n"
 
 };
 

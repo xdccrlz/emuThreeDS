@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <string_view>
 #include "common/common_types.h"
 
 namespace Common::Telemetry {
@@ -53,8 +52,8 @@ public:
 template <typename T>
 class Field : public FieldInterface {
 public:
-    Field(FieldType type, std::string_view name, T value)
-        : name(name), type(type), value(std::move(value)) {}
+    Field(FieldType type, std::string name, T value)
+        : name(std::move(name)), type(type), value(std::move(value)) {}
 
     Field(const Field&) = default;
     Field& operator=(const Field&) = default;
@@ -116,7 +115,7 @@ public:
      * @param value Value for the field to add.
      */
     template <typename T>
-    void AddField(FieldType type, std::string_view name, T value) {
+    void AddField(FieldType type, const char* name, T value) {
         return AddField(std::make_unique<Field<T>>(type, name, std::move(value)));
     }
 

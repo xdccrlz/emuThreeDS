@@ -1,21 +1,18 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include <set>
 #include <span>
 #include "common/assert.h"
 #include "common/settings.h"
 #include "core/frontend/emu_window.h"
-#include "video_core/rasterizer_cache/custom_tex_manager.h"
+#include "video_core/custom_textures/custom_format.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_platform.h"
 
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 namespace Vulkan {
-
-vk::DynamicLoader Instance::dl("@executable_path/Frameworks/libMoltenVK.dylib");
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugUtilsCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity, VkDebugUtilsMessageTypeFlagsEXT type,
@@ -128,8 +125,9 @@ vk::Format MakeCustomFormat(VideoCore::CustomPixelFormat format) {
         return vk::Format::eAstc6x6UnormBlock;
     case VideoCore::CustomPixelFormat::ASTC8:
         return vk::Format::eAstc8x6UnormBlock;
+    default:
+        LOG_ERROR(Render_Vulkan, "Unknown custom format {}", format);
     }
-    LOG_ERROR(Render_Vulkan, "Unknown custom format {}", format);
     return vk::Format::eR8G8B8A8Unorm;
 }
 
@@ -215,7 +213,7 @@ std::vector<std::string> GetSupportedExtensions(vk::PhysicalDevice physical) {
 Instance::Instance(bool validation, bool dump_command_buffers)
     : enable_validation{validation}, dump_command_buffers{dump_command_buffers} {
     auto vkGetInstanceProcAddr =
-        dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        GetVulkanLoader().getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
     // Enable the instance extensions the platform requires
@@ -271,7 +269,7 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
 
     // Fetch instance independant function pointers
     auto vkGetInstanceProcAddr =
-        dl.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        GetVulkanLoader().getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
     VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
     // Enable the instance extensions the backend uses
@@ -288,17 +286,12 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
         .pApplicationName = "Citra",
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "Citra Vulkan",
-        .engineVersion = VK_MAKE_VERSION(1, 3, 0),
-        .apiVersion = VK_API_VERSION_1_3
+        .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion = available_version,
     };
 
     std::array<const char*, 3> layers;
-#ifdef ANDROID
-    u32 layer_count = 1;
-    layers[0] = "VK_LAYER_KHRONOS_timeline_semaphore";
-#else
     u32 layer_count = 0;
-#endif
 
     if (enable_validation) {
         layers[layer_count++] = "VK_LAYER_KHRONOS_validation";
@@ -319,7 +312,7 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
         MakeDebugUtilsMessengerInfo(),
     };
 
-    const auto IsSupported = [&extensions](std::string_view requested) {
+    const auto is_supported = [&extensions](std::string_view requested) {
         const auto it =
             std::find_if(extensions.begin(), extensions.end(),
                          [requested](const char* extension) { return requested == extension; });
@@ -327,8 +320,8 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
         return it != extensions.end();
     };
 
-    debug_messenger_supported = IsSupported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-    debug_report_supported = IsSupported(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    debug_messenger_supported = is_supported(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    debug_report_supported = is_supported(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
     if (!debug_messenger_supported || !enable_validation) {
         instance_chain.unlink<vk::DebugUtilsMessengerCreateInfoEXT>();
     }
@@ -341,7 +334,7 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
         UNREACHABLE();
     }
 
-    surface = CreateSurface(instance, window);
+    LoadInstanceFunctions(instance);
 
     // If validation is enabled attempt to also enable debug messenger
     if (enable_validation) {
@@ -365,9 +358,6 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
     physical_device = physical_devices[physical_device_index];
     properties = physical_device.getProperties();
     limits = properties.limits;
-
-    LOG_INFO(Render_Vulkan, "Creating logical device for physical device: {}",
-             properties.deviceName);
 
     CollectTelemetryParameters();
     CreateDevice();
@@ -625,10 +615,11 @@ bool Instance::CreateDevice() {
     }
 
     std::vector<const char*> enabled_extensions;
-    const auto AddExtension = [&](std::string_view extension, bool blacklist = false,
-                                  std::string_view reason = "") -> bool {
-        auto result = std::find_if(available_extensions.begin(), available_extensions.end(),
-                                   [&](const std::string& name) { return name == extension; });
+    const auto add_extension = [&](std::string_view extension, bool blacklist = false,
+                                   std::string_view reason = "") -> bool {
+        const auto result =
+            std::find_if(available_extensions.begin(), available_extensions.end(),
+                         [&](const std::string& name) { return name == extension; });
 
         if (result != available_extensions.end() && !blacklist) {
             LOG_INFO(Render_Vulkan, "Enabling extension: {}", extension);
@@ -645,27 +636,21 @@ bool Instance::CreateDevice() {
 
     const bool is_arm = driver_id == vk::DriverIdKHR::eArmProprietary;
     const bool is_qualcomm = driver_id == vk::DriverIdKHR::eQualcommProprietary;
-    const bool is_radv = driver_id == vk::DriverIdKHR::eMesaRadv;
 
-    AddExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    timeline_semaphores = AddExtension(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
-    image_format_list = AddExtension(VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME);
-    pipeline_creation_feedback = AddExtension(VK_EXT_PIPELINE_CREATION_FEEDBACK_EXTENSION_NAME);
-    shader_stencil_export = AddExtension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
-    bool has_portability_subset = AddExtension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-    bool has_dynamic_rendering = AddExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+    add_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    image_format_list = add_extension(VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME);
+    pipeline_creation_feedback = add_extension(VK_EXT_PIPELINE_CREATION_FEEDBACK_EXTENSION_NAME);
+    shader_stencil_export = add_extension(VK_EXT_SHADER_STENCIL_EXPORT_EXTENSION_NAME);
+    bool has_timeline_semaphores = add_extension(VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME);
+    bool has_portability_subset = add_extension(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+    bool has_dynamic_rendering = add_extension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     bool has_extended_dynamic_state =
-        AddExtension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME, is_arm || is_qualcomm,
-                     "it is broken on Qualcomm and ARM drivers");
-    bool has_extended_dynamic_state2 =
-        AddExtension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME, is_qualcomm,
-                     "it is broken on Qualcomm drivers");
-    bool has_extended_dynamic_state3 = AddExtension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME,
-                                                    is_radv, "it is broken on RADV drivers");
-    bool has_custom_border_color = AddExtension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
-    bool has_index_type_uint8 = AddExtension(VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME);
+        add_extension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME, is_arm || is_qualcomm,
+                      "it is broken on Qualcomm and ARM drivers");
+    bool has_custom_border_color = add_extension(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+    bool has_index_type_uint8 = add_extension(VK_EXT_INDEX_TYPE_UINT8_EXTENSION_NAME);
     bool has_pipeline_creation_cache_control =
-        AddExtension(VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME);
+        add_extension(VK_EXT_PIPELINE_CREATION_CACHE_CONTROL_EXTENSION_NAME);
 
     // Search queue families for graphics and present queues
     auto family_properties = physical_device.getQueueFamilyProperties();
@@ -675,54 +660,32 @@ bool Instance::CreateDevice() {
     }
 
     bool graphics_queue_found = false;
-    bool present_queue_found = false;
     for (std::size_t i = 0; i < family_properties.size(); i++) {
         // Check if queue supports graphics
         const u32 index = static_cast<u32>(i);
         if (family_properties[i].queueFlags & vk::QueueFlagBits::eGraphics) {
-            graphics_queue_family_index = index;
+            queue_family_index = index;
             graphics_queue_found = true;
-
-            // If this queue also supports presentation we are finished
-            if (physical_device.getSurfaceSupportKHR(static_cast<u32>(i), surface)) {
-                present_queue_family_index = index;
-                present_queue_found = true;
-                break;
-            }
-        }
-
-        // Check if queue supports presentation
-        if (physical_device.getSurfaceSupportKHR(index, surface)) {
-            present_queue_family_index = index;
-            present_queue_found = true;
         }
     }
 
-    if (!graphics_queue_found || !present_queue_found) {
+    if (!graphics_queue_found) {
         LOG_CRITICAL(Render_Vulkan, "Unable to find graphics and/or present queues.");
         return false;
     }
 
     static constexpr float queue_priorities[] = {1.0f};
 
-    const std::array queue_infos = {
-        vk::DeviceQueueCreateInfo{
-            .queueFamilyIndex = graphics_queue_family_index,
-            .queueCount = 1,
-            .pQueuePriorities = queue_priorities,
-        },
-        vk::DeviceQueueCreateInfo{
-            .queueFamilyIndex = present_queue_family_index,
-            .queueCount = 1,
-            .pQueuePriorities = queue_priorities,
-        },
+    const vk::DeviceQueueCreateInfo queue_info = {
+        .queueFamilyIndex = queue_family_index,
+        .queueCount = 1,
+        .pQueuePriorities = queue_priorities,
     };
 
-    const u32 queue_count = graphics_queue_family_index != present_queue_family_index ? 2u : 1u;
     vk::StructureChain device_chain = {
         vk::DeviceCreateInfo{
-            .queueCreateInfoCount = queue_count,
-            .pQueueCreateInfos = queue_infos.data(),
+            .queueCreateInfoCount = 1u,
+            .pQueueCreateInfos = &queue_info,
             .enabledExtensionCount = static_cast<u32>(enabled_extensions.size()),
             .ppEnabledExtensionNames = enabled_extensions.data(),
         },
@@ -738,12 +701,7 @@ bool Instance::CreateDevice() {
             },
         },
         vk::PhysicalDevicePortabilitySubsetFeaturesKHR{},
-#ifndef ANDROID ///< Android uses the extension layer. Avoid enabling the feature because it messes
-                ///< with the pNext chain
-        vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR{
-            .timelineSemaphore = true,
-        },
-#endif
+        vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR{},
         vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT{},
         vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT{},
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT{},
@@ -775,6 +733,13 @@ bool Instance::CreateDevice() {
         device_chain.unlink<vk::PhysicalDevicePortabilitySubsetFeaturesKHR>();
     }
 
+    if (has_timeline_semaphores) {
+        FEAT_SET(vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR, timelineSemaphore,
+                 timeline_semaphores)
+    } else {
+        device_chain.unlink<vk::PhysicalDeviceTimelineSemaphoreFeaturesKHR>();
+    }
+
     if (has_index_type_uint8) {
         FEAT_SET(vk::PhysicalDeviceIndexTypeUint8FeaturesEXT, indexTypeUint8, index_type_uint8)
     } else {
@@ -786,26 +751,6 @@ bool Instance::CreateDevice() {
                  extended_dynamic_state)
     } else {
         device_chain.unlink<vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT>();
-    }
-
-    if (has_extended_dynamic_state2) {
-        FEAT_SET(vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT, extendedDynamicState2LogicOp,
-                 extended_dynamic_state2)
-    } else {
-        device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState2FeaturesEXT>();
-    }
-
-    if (has_extended_dynamic_state3) {
-        FEAT_SET(vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                 extendedDynamicState3LogicOpEnable, extended_dynamic_state3_logicop_enable)
-        FEAT_SET(vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                 extendedDynamicState3ColorBlendEnable, extended_dynamic_state3_color_blend_enable)
-        FEAT_SET(vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                 extendedDynamicState3ColorBlendEquation, extended_dynamic_state3_color_blend_eq)
-        FEAT_SET(vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
-                 extendedDynamicState3ColorWriteMask, extended_dynamic_state3_color_write_mask)
-    } else {
-        device_chain.unlink<vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT>();
     }
 
     if (has_dynamic_rendering) {
@@ -843,8 +788,8 @@ bool Instance::CreateDevice() {
 
     VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
 
-    graphics_queue = device.getQueue(graphics_queue_family_index, 0);
-    present_queue = device.getQueue(present_queue_family_index, 0);
+    graphics_queue = device.getQueue(queue_family_index, 0);
+    present_queue = device.getQueue(queue_family_index, 0);
 
     CreateAllocator();
     return true;

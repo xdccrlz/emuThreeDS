@@ -1,44 +1,34 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
 #pragma once
 
-#include <atomic>
 #include <span>
-#include <boost/icl/right_open_interval.hpp>
 #include "common/hash.h"
 #include "common/math_util.h"
+#include "common/slot_vector.h"
 #include "common/vector_math.h"
-#include "video_core/rasterizer_cache/slot_vector.h"
 #include "video_core/regs_texturing.h"
 
 namespace VideoCore {
 
-using Rect2D = Common::Rectangle<u32>;
-
-using SurfaceId = SlotId;
-using SamplerId = SlotId;
+using SurfaceId = Common::SlotId;
+using SamplerId = Common::SlotId;
 
 /// Fake surface ID for null surfaces
 constexpr SurfaceId NULL_SURFACE_ID{0};
-/// Fake surface Id for null surface cubes
+/// Fake surface ID for null cube surfaces
 constexpr SurfaceId NULL_SURFACE_CUBE_ID{1};
 /// Fake sampler ID for null samplers
 constexpr SamplerId NULL_SAMPLER_ID{0};
 
-using SurfaceInterval = boost::icl::right_open_interval<PAddr>;
-
 struct Offset {
-    constexpr auto operator<=>(const Offset&) const noexcept = default;
-
     u32 x = 0;
     u32 y = 0;
 };
 
 struct Extent {
-    constexpr auto operator<=>(const Extent&) const noexcept = default;
-
     u32 width = 1;
     u32 height = 1;
 };
@@ -53,7 +43,7 @@ union ClearValue {
 
 struct TextureClear {
     u32 texture_level;
-    Rect2D texture_rect;
+    Common::Rectangle<u32> texture_rect;
     ClearValue value;
 };
 
@@ -72,26 +62,21 @@ struct TextureBlit {
     u32 dst_level;
     u32 src_layer;
     u32 dst_layer;
-    Rect2D src_rect;
-    Rect2D dst_rect;
+    Common::Rectangle<u32> src_rect;
+    Common::Rectangle<u32> dst_rect;
 };
 
 struct BufferTextureCopy {
     u32 buffer_offset;
     u32 buffer_size;
-    Rect2D texture_rect;
+    Common::Rectangle<u32> texture_rect;
     u32 texture_level;
 };
 
-enum class DecodeState : u32;
-
 struct StagingData {
-    u32 size = 0;
-    std::span<u8> mapped{};
-    u64 buffer_offset = 0;
-    const std::atomic<DecodeState>* flag{};
-
-    void Wait() const noexcept;
+    u32 size;
+    u32 offset;
+    std::span<u8> mapped;
 };
 
 struct TextureCubeConfig {
@@ -105,7 +90,13 @@ struct TextureCubeConfig {
     u32 levels;
     Pica::TexturingRegs::TextureFormat format;
 
-    auto operator<=>(const TextureCubeConfig&) const noexcept = default;
+    bool operator==(const TextureCubeConfig& rhs) const {
+        return std::memcmp(this, &rhs, sizeof(TextureCubeConfig)) == 0;
+    }
+
+    bool operator!=(const TextureCubeConfig& rhs) const {
+        return std::memcmp(this, &rhs, sizeof(TextureCubeConfig)) != 0;
+    }
 
     const u64 Hash() const {
         return Common::ComputeHash64(this, sizeof(TextureCubeConfig));

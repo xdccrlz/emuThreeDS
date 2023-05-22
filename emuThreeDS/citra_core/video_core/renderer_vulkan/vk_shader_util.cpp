@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -169,7 +169,7 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
         static_cast<EShMessages>(EShMsgDefault | EShMsgSpvRules | EShMsgVulkanRules);
     EShLanguage lang = ToEshShaderStage(stage);
 
-    int default_version = 450;
+    const int default_version = 450;
     const char* pass_source_code = code.data();
     int pass_source_code_length = static_cast<int>(code.size());
 
@@ -180,9 +180,9 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
 
     glslang::TShader::ForbidIncluder includer;
     if (!shader->parse(&DefaultTBuiltInResource, default_version, profile, false, true, messages,
-                       includer)) {
-        LOG_CRITICAL(Render_Vulkan, "Shader Info Log:\n{}\n{}", shader->getInfoLog(),
-                     shader->getInfoDebugLog());
+                       includer)) [[unlikely]] {
+        LOG_INFO(Render_Vulkan, "Shader Info Log:\n{}\n{}", shader->getInfoLog(),
+                 shader->getInfoDebugLog());
         fmt::print("{}", code);
         return VK_NULL_HANDLE;
     }
@@ -191,8 +191,8 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
     auto program = std::make_unique<glslang::TProgram>();
     program->addShader(shader.get());
     if (!program->link(messages)) {
-        LOG_CRITICAL(Render_Vulkan, "Program Info Log:\n{}\n{}", program->getInfoLog(),
-                     program->getInfoDebugLog());
+        LOG_INFO(Render_Vulkan, "Program Info Log:\n{}\n{}", program->getInfoLog(),
+                 program->getInfoDebugLog());
         return VK_NULL_HANDLE;
     }
 
@@ -202,7 +202,7 @@ vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, v
     glslang::SpvOptions options;
 
     // Compile the SPIR-V module without optimizations for easier debugging in RenderDoc.
-    if (level == ShaderOptimization::Debug) {
+    if (level == ShaderOptimization::Debug) [[unlikely]] {
         intermediate->addSourceText(pass_source_code, pass_source_code_length);
         options.generateDebugInfo = true;
         options.disableOptimizer = true;

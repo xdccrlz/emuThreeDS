@@ -3,7 +3,6 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
-#include <cinttypes>
 #include <codecvt>
 #include <cstring>
 #include <locale>
@@ -11,6 +10,7 @@
 #include <vector>
 #include <fmt/format.h>
 #include "common/logging/log.h"
+#include "common/settings.h"
 #include "common/string_util.h"
 #include "common/swap.h"
 #include "core/core.h"
@@ -25,6 +25,7 @@
 #include "core/loader/ncch.h"
 #include "core/loader/smdh.h"
 #include "core/memory.h"
+#include "core/system_titles.h"
 #include "network/network.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +54,7 @@ std::pair<std::optional<u32>, ResultStatus> AppLoader_NCCH::LoadKernelSystemMode
     if (!is_loaded) {
         ResultStatus res = base_ncch.Load();
         if (res != ResultStatus::Success) {
-            return std::make_pair(std::optional<u32>{}, res);
+            return std::make_pair(std::nullopt, res);
         }
     }
 
@@ -66,7 +67,7 @@ std::pair<std::optional<u8>, ResultStatus> AppLoader_NCCH::LoadKernelN3dsMode() 
     if (!is_loaded) {
         ResultStatus res = base_ncch.Load();
         if (res != ResultStatus::Success) {
-            return std::make_pair(std::optional<u8>{}, res);
+            return std::make_pair(std::nullopt, res);
         }
     }
 
@@ -162,7 +163,14 @@ ResultStatus AppLoader_NCCH::LoadExec(std::shared_ptr<Kernel::Process>& process)
     return ResultStatus::Error;
 }
 
-void AppLoader_NCCH::ParseRegionLockoutInfo() {
+void AppLoader_NCCH::ParseRegionLockoutInfo(u64 program_id) {
+    if (Settings::values.region_value.GetValue() != Settings::REGION_VALUE_AUTO_SELECT) {
+        return;
+    }
+
+    auto cfg = Service::CFG::GetModule(Core::System::GetInstance());
+    ASSERT_MSG(cfg, "CFG Module missing!");
+
     std::vector<u8> smdh_buffer;
     if (ReadIcon(smdh_buffer) == ResultStatus::Success && smdh_buffer.size() >= sizeof(SMDH)) {
         SMDH smdh;
@@ -176,9 +184,12 @@ void AppLoader_NCCH::ParseRegionLockoutInfo() {
             }
             region_lockout >>= 1;
         }
-        auto cfg = Service::CFG::GetModule(Core::System::GetInstance());
-        ASSERT_MSG(cfg, "CFG Module missing!");
         cfg->SetPreferredRegionCodes(regions);
+    } else {
+        const auto region = Core::GetSystemTitleRegion(program_id);
+        if (region.has_value()) {
+            cfg->SetPreferredRegionCodes({region.value()});
+        }
     }
 }
 
@@ -229,7 +240,7 @@ ResultStatus AppLoader_NCCH::Load(std::shared_ptr<Kernel::Process>& process) {
 
     system.ArchiveManager().RegisterSelfNCCH(*this);
 
-    ParseRegionLockoutInfo();
+    ParseRegionLockoutInfo(ncch_program_id);
 
     return ResultStatus::Success;
 }

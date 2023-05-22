@@ -3,15 +3,15 @@
 // Refer to the license.txt file included.
 
 #include <algorithm>
-#include <cinttypes>
 #include <memory>
 #include <utility>
 #include <vector>
-#include "bad_word_list.app.romfs.h"
+#include "app/bad_word_list.app.romfs.h"
 #include "common/archives.h"
 #include "common/common_types.h"
 #include "common/file_util.h"
 #include "common/logging/log.h"
+#include "common/settings.h"
 #include "common/string_util.h"
 #include "common/swap.h"
 #include "core/core.h"
@@ -22,9 +22,9 @@
 #include "core/hle/service/am/am.h"
 #include "core/hle/service/fs/archive.h"
 #include "core/loader/loader.h"
-#include "country_list.app.romfs.h"
-#include "mii.app.romfs.h"
-#include "shared_font.app.romfs.h"
+#include "app/country_list.app.romfs.h"
+#include "app/mii.app.romfs.h"
+#include "app/shared_font.app.romfs.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // FileSys namespace
@@ -88,8 +88,17 @@ ResultVal<std::unique_ptr<FileBackend>> NCCHArchive::OpenFile(const Path& path,
     NCCHFilePath openfile_path;
     std::memcpy(&openfile_path, binary.data(), sizeof(NCCHFilePath));
 
-    std::string file_path =
-        Service::AM::GetTitleContentPath(media_type, title_id, openfile_path.content_index);
+    std::string file_path;
+    if (Settings::values.is_new_3ds) {
+        // Try the New 3DS specific variant first.
+        file_path = Service::AM::GetTitleContentPath(media_type, title_id | 0x20000000,
+                                                     openfile_path.content_index);
+    }
+    if (!Settings::values.is_new_3ds || !FileUtil::Exists(file_path)) {
+        file_path =
+            Service::AM::GetTitleContentPath(media_type, title_id, openfile_path.content_index);
+    }
+
     auto ncch_container = NCCHContainer(file_path, 0, openfile_path.content_index);
 
     Loader::ResultStatus result;

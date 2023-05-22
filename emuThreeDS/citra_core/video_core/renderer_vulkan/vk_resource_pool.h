@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2020 yuzu Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #pragma once
 
@@ -19,7 +20,7 @@ class MasterSemaphore;
 class ResourcePool {
 public:
     explicit ResourcePool() = default;
-    explicit ResourcePool(MasterSemaphore& master_semaphore, std::size_t grow_step);
+    explicit ResourcePool(MasterSemaphore* master_semaphore, std::size_t grow_step);
     virtual ~ResourcePool() = default;
 
     ResourcePool& operator=(ResourcePool&&) noexcept = default;
@@ -50,7 +51,7 @@ protected:
 
 class CommandPool final : public ResourcePool {
 public:
-    explicit CommandPool(const Instance& instance, MasterSemaphore& master_semaphore);
+    explicit CommandPool(const Instance& instance, MasterSemaphore* master_semaphore);
     ~CommandPool() override;
 
     void Allocate(std::size_t begin, std::size_t end) override;
@@ -65,7 +66,7 @@ private:
 
 class DescriptorPool final : public ResourcePool {
 public:
-    explicit DescriptorPool(const Instance& instance, MasterSemaphore& master_semaphore);
+    explicit DescriptorPool(const Instance& instance, MasterSemaphore* master_semaphore);
     ~DescriptorPool() override;
 
     /// Refreshes the tick of the currently commited pool

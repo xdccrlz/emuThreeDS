@@ -1,3 +1,0 @@
-/Users/antique/Desktop/emuThreeDS/emuThreeDS/citra_core/video_core/host_shaders/CMakeFiles/host_shaders.dir
-/Users/antique/Desktop/emuThreeDS/emuThreeDS/citra_core/video_core/host_shaders/CMakeFiles/edit_cache.dir
-/Users/antique/Desktop/emuThreeDS/emuThreeDS/citra_core/video_core/host_shaders/CMakeFiles/rebuild_cache.dir

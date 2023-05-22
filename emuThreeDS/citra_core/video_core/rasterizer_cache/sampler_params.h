@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <compare>
 #include "common/hash.h"
 #include "video_core/regs_texturing.h"
 
@@ -27,6 +28,8 @@ struct SamplerParams {
         return Common::ComputeHash64(this, sizeof(SamplerParams));
     }
 };
+static_assert(std::has_unique_object_representations_v<SamplerParams>,
+              "SamplerParams is not suitable for hashing");
 
 } // namespace VideoCore
 

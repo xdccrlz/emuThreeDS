@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -53,7 +53,7 @@ struct UniformData {
     int proctex_diff_lut_offset;
     float proctex_bias;
     int shadow_texture_bias;
-    bool enable_clip1;
+    alignas(4) bool enable_clip1;
     alignas(16) Common::Vec4i lighting_lut_offset[LightingRegs::NumLightingSampler / 4];
     alignas(16) Common::Vec3f fog_color;
     alignas(8) Common::Vec2f proctex_noise_f;

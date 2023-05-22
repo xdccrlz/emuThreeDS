@@ -6,6 +6,7 @@
 #include <cstring>
 #include "common/arch.h"
 #include "common/assert.h"
+#include "common/scm_rev.h"
 #include "common/telemetry.h"
 
 namespace Common::Telemetry {
@@ -41,12 +42,12 @@ template class Field<const char*>;
 template class Field<std::chrono::microseconds>;
 
 void AppendBuildInfo(FieldCollection& fc) {
-    const bool is_git_dirty{std::strstr("", "dirty") != nullptr};
+    const bool is_git_dirty{std::strstr(Common::g_scm_desc, "dirty") != nullptr};
     fc.AddField(FieldType::App, "Git_IsDirty", is_git_dirty);
-    fc.AddField(FieldType::App, "Git_Branch", "main");
-    fc.AddField(FieldType::App, "Git_Revision", "1000");
-    fc.AddField(FieldType::App, "BuildDate", "");
-    fc.AddField(FieldType::App, "BuildName", "");
+    fc.AddField(FieldType::App, "Git_Branch", Common::g_scm_branch);
+    fc.AddField(FieldType::App, "Git_Revision", Common::g_scm_rev);
+    fc.AddField(FieldType::App, "BuildDate", Common::g_build_date);
+    fc.AddField(FieldType::App, "BuildName", Common::g_build_name);
 }
 
 void AppendCPUInfo(FieldCollection& fc) {

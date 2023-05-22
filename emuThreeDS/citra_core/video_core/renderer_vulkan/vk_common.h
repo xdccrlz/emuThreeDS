@@ -1,11 +1,8 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
 #pragma once
-
-#include <algorithm>
-#include "common/common_types.h"
 
 // Include vulkan-hpp header
 #define VK_ENABLE_BETA_EXTENSIONS
@@ -13,7 +10,6 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #define VULKAN_HPP_NO_CONSTRUCTORS
 #define VULKAN_HPP_NO_STRUCT_SETTERS
-#include <MoltenVK/mvk_vulkan.h>
 #include <vulkan/vulkan.hpp>
 
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
