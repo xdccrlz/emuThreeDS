@@ -10,16 +10,22 @@ import SwiftUI
 struct ContentView: View {
     var body: some View {
         TabView {
-            RomsView()
+            LibraryView()
                 .tabItem {
                     Image(systemName: "folder")
-                    Text("Roms")
+                    Text("Library")
                 }
             
             EmulationView()
                 .tabItem {
                     Image(systemName: "gamecontroller")
                     Text("Emulation")
+                }
+            
+            SettingsView()
+                .tabItem {
+                    Image(systemName: "gearshape")
+                    Text("Settings")
                 }
         }
     }

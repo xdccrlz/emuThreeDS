@@ -600,9 +600,13 @@
 		C15E09C92A1B674E00D70564 /* libOSDependent.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B42A1B673200D70564 /* libOSDependent.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C15E09CA2A1B675000D70564 /* libSPIRV.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B62A1B673200D70564 /* libSPIRV.xcframework */; };
 		C15E09CB2A1B675100D70564 /* libSPIRV.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B62A1B673200D70564 /* libSPIRV.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		C17FAB8B2A1B74380020FF0B /* CitraWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8A2A1B74380020FF0B /* CitraWrapper.m */; };
+		C17FAB8B2A1B74380020FF0B /* CitraWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */; };
 		C17FAB8D2A1B74AD0020FF0B /* EmulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */; };
-		C17FAB8F2A1B74BD0020FF0B /* RomsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8E2A1B74BD0020FF0B /* RomsView.swift */; };
+		C17FAB8F2A1B74BD0020FF0B /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */; };
+		C1A3E21D2A1F139300440F83 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E21C2A1F139300440F83 /* SettingsView.swift */; };
+		C1A3E2242A1F1DCC00440F83 /* LibraryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */; };
+		C1A3E22C2A1F2B3600440F83 /* DirectoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */; };
+		C1A3E22E2A1F399300440F83 /* Bruno.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E22D2A1F399300440F83 /* Bruno.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1215,9 +1219,16 @@
 		C15E09B52A1B673200D70564 /* libOGLCompiler.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libOGLCompiler.xcframework; sourceTree = "<group>"; };
 		C15E09B62A1B673200D70564 /* libSPIRV.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libSPIRV.xcframework; sourceTree = "<group>"; };
 		C17FAB892A1B74380020FF0B /* CitraWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CitraWrapper.h; sourceTree = "<group>"; };
-		C17FAB8A2A1B74380020FF0B /* CitraWrapper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = CitraWrapper.m; sourceTree = "<group>"; };
+		C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CitraWrapper.mm; sourceTree = "<group>"; };
 		C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationView.swift; sourceTree = "<group>"; };
-		C17FAB8E2A1B74BD0020FF0B /* RomsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RomsView.swift; sourceTree = "<group>"; };
+		C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		C1A3E21C2A1F139300440F83 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		C1A3E2222A1F1DBF00440F83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryManager.swift; sourceTree = "<group>"; };
+		C1A3E2252A1F1F1C00440F83 /* emuThreeDS-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "emuThreeDS-Bridging-Header.h"; sourceTree = "<group>"; };
+		C1A3E22A2A1F2B3600440F83 /* DirectoryManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DirectoryManager.h; sourceTree = "<group>"; };
+		C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = DirectoryManager.mm; sourceTree = "<group>"; };
+		C1A3E22D2A1F399300440F83 /* Bruno.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bruno.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1276,13 +1287,17 @@
 		C15DC0C92A1B40C00053B8EA /* emuThreeDS */ = {
 			isa = PBXGroup;
 			children = (
+				C1A3E2222A1F1DBF00440F83 /* Info.plist */,
 				C15DC1022A1B41FD0053B8EA /* citra_core */,
 				C17FAB882A1B74130020FF0B /* citra_wrapper */,
 				C15DC0D82A1B40D00053B8EA /* externals */,
 				C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */,
+				C1A3E22D2A1F399300440F83 /* Bruno.swift */,
 				C15DC0CC2A1B40C00053B8EA /* ContentView.swift */,
 				C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */,
-				C17FAB8E2A1B74BD0020FF0B /* RomsView.swift */,
+				C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */,
+				C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */,
+				C1A3E21C2A1F139300440F83 /* SettingsView.swift */,
 				C15DC0CE2A1B40C10053B8EA /* Assets.xcassets */,
 				C15DC0D02A1B40C10053B8EA /* Preview Content */,
 			);
@@ -2502,7 +2517,10 @@
 			isa = PBXGroup;
 			children = (
 				C17FAB892A1B74380020FF0B /* CitraWrapper.h */,
-				C17FAB8A2A1B74380020FF0B /* CitraWrapper.m */,
+				C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */,
+				C1A3E22A2A1F2B3600440F83 /* DirectoryManager.h */,
+				C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */,
+				C1A3E2252A1F1F1C00440F83 /* emuThreeDS-Bridging-Header.h */,
 			);
 			path = citra_wrapper;
 			sourceTree = "<group>";
@@ -2602,6 +2620,7 @@
 				C15DC1532A1B421F0053B8EA /* time_stretch.cpp in Sources */,
 				C15DC4B32A1B438B0053B8EA /* ncch_container.cpp in Sources */,
 				C15DC77B2A1B4B2D0053B8EA /* parser_assembly.cpp in Sources */,
+				C1A3E21D2A1F139300440F83 /* SettingsView.swift in Sources */,
 				C15E09672A1B5D9700D70564 /* pssr.cpp in Sources */,
 				C15DC4172A1B438B0053B8EA /* ac_i.cpp in Sources */,
 				C15DC43B2A1B438B0053B8EA /* ssl_c.cpp in Sources */,
@@ -2678,6 +2697,7 @@
 				C15DC42D2A1B438B0053B8EA /* soc_u.cpp in Sources */,
 				C15DC4572A1B438B0053B8EA /* ns_s.cpp in Sources */,
 				C15DC42A2A1B438B0053B8EA /* extra_hid.cpp in Sources */,
+				C1A3E2242A1F1DCC00440F83 /* LibraryManager.swift in Sources */,
 				C15DC47A2A1B438B0053B8EA /* svc.cpp in Sources */,
 				C15E098C2A1B5D9700D70564 /* tigertab.cpp in Sources */,
 				C15E09422A1B5D9700D70564 /* esign.cpp in Sources */,
@@ -2835,6 +2855,7 @@
 				C15DC4AE2A1B438B0053B8EA /* archive_sdmcwriteonly.cpp in Sources */,
 				C15DC1DD2A1B432A0053B8EA /* filter.cpp in Sources */,
 				C15DC4042A1B438B0053B8EA /* applet.cpp in Sources */,
+				C1A3E22C2A1F2B3600440F83 /* DirectoryManager.mm in Sources */,
 				C15E09262A1B5D9700D70564 /* gf2_32.cpp in Sources */,
 				C15DC58F2A1B46380053B8EA /* vk_pipeline_cache.cpp in Sources */,
 				C15E08D52A1B5D9700D70564 /* rdtables.cpp in Sources */,
@@ -2879,6 +2900,7 @@
 				C15DC4C72A1B438B0053B8EA /* arm_dyncom_dec.cpp in Sources */,
 				C15E092E2A1B5D9700D70564 /* elgamal.cpp in Sources */,
 				C15DC4382A1B438B0053B8EA /* cfg_s.cpp in Sources */,
+				C1A3E22E2A1F399300440F83 /* Bruno.swift in Sources */,
 				C15DC4202A1B438B0053B8EA /* am_sys.cpp in Sources */,
 				C15DC0CD2A1B40C00053B8EA /* ContentView.swift in Sources */,
 				C15DC4D62A1B438B0053B8EA /* perf_stats.cpp in Sources */,
@@ -2961,9 +2983,9 @@
 				C15DC4022A1B438B0053B8EA /* mint.cpp in Sources */,
 				C15E09362A1B5D9700D70564 /* regtest1.cpp in Sources */,
 				C15DC4512A1B438B0053B8EA /* cam_c.cpp in Sources */,
-				C17FAB8F2A1B74BD0020FF0B /* RomsView.swift in Sources */,
+				C17FAB8F2A1B74BD0020FF0B /* LibraryView.swift in Sources */,
 				C15DC41E2A1B438B0053B8EA /* am_net.cpp in Sources */,
-				C17FAB8B2A1B74380020FF0B /* CitraWrapper.m in Sources */,
+				C17FAB8B2A1B74380020FF0B /* CitraWrapper.mm in Sources */,
 				C15E08F32A1B5D9700D70564 /* pubkey.cpp in Sources */,
 				C15DC4B62A1B438B0053B8EA /* backend.cpp in Sources */,
 				C15DC7B12A1B4FCB0053B8EA /* lodepng.cpp in Sources */,
@@ -3278,12 +3300,14 @@
 					"\"$(SRCROOT)/emuThreeDS/citra_core\"",
 					"\"$(SRCROOT)/emuThreeDS/externals/include/cryptopp\"",
 				);
+				INFOPLIST_FILE = emuThreeDS/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -3304,6 +3328,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "$(PROJECT_DIR)/emuThreeDS/citra_wrapper/emuThreeDS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
@@ -3334,12 +3359,14 @@
 					"\"$(SRCROOT)/emuThreeDS/citra_core\"",
 					"\"$(SRCROOT)/emuThreeDS/externals/include/cryptopp\"",
 				);
+				INFOPLIST_FILE = emuThreeDS/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -3360,6 +3387,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "$(PROJECT_DIR)/emuThreeDS/citra_wrapper/emuThreeDS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
