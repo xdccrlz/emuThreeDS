@@ -1,0 +1,47 @@
+# emuThreeDS
+**emuThreeDS** is a Nintendo 3DS emulator for Apple TV, iPad and iPhone based on **[Citra](https://github.com/citra-emu/citra)**.
+
+<span>
+  <img src="https://img.shields.io/static/v1?label=Built%20with&message=C%2B%2B&color=blue"/>
+  <img src="https://img.shields.io/static/v1?label=Built%20with&message=Objective-C%2B%2B&color=blue"/>
+  <img src="https://img.shields.io/static/v1?label=Built%20with&message=Swift&color=orange"/>
+  <img src="https://img.shields.io/static/v1?label=Built%20with&message=SwiftUI&color=orange"/>
+  <img src="https://img.shields.io/static/v1?label=License&message=GPLv3&color=blue"/>
+</span>
+
+## Support
+Support the development of **emuThreeDS** by going to the links below!
+
+<span>
+  <a href="https://buymeacoffee.com/antiquecodes" style="text-decoration: none;">
+    <img src="https://img.shields.io/static/v1?label=Support&message=Buy%20Me%20A%20Coffee&color=yellow"/>
+  </a>
+  <a href="https://ko-fi.com/antiquecodes" style="text-decoration: none;">
+    <img src="https://img.shields.io/static/v1?label=Support&message=Ko-Fi&color=brown"/>
+  </a>
+    <a href="https://patreon.com/emuplace" style="text-decoration: none;">
+    <img src="https://img.shields.io/static/v1?label=Support&message=Patreon&color=black"/>
+  </a>
+  <a href="https://paypal.me/officialantique" style="text-decoration: none;">
+    <img src="https://img.shields.io/static/v1?label=Support&message=PayPal&color=blue"/>
+  </a>
+</span>
+
+## Building
+Go to **[BUILDING.md](resources/markdowns/BUILDING.md)** to see how to build **emuThreeDS**.
+
+## Changelog
+Go to **[CHANGELOG.md](resources/markdowns/CHANGELOG.md)** to see changes in the latest release.
+
+## Screenshots
+
+<span>
+    <img src="resources/images/roms_1.png" width="320px"/>
+    <img src="resources/images/settings_1.png" width="320px"/>
+    <br/>
+    <img src="resources/images/ingame_1.png" width="320px"/>
+    <br/>
+    <img src="resources/images/ingame_2.png" width="640px"/>
+    <br/>
+    <img src="resources/images/ingame_3.png" width="640px"/>
+</span>
