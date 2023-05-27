@@ -6,29 +6,34 @@
 //
 
 #import <Foundation/Foundation.h>
-
-#ifdef __cplusplus
-#include <string>
-#include <vector>
-
-namespace GameInfo {
-std::vector<uint8_t> GetSMDHData(std::string physical_name);
-
-std::u16string GetPublisher(std::string physical_name);
-std::string GetRegions(std::string physical_name);
-std::u16string GetTitle(std::string physical_name);
-
-std::vector<uint16_t> GetIcon(std::string physical_name);
-}
-#endif
-
+#include <MetalKit/MetalKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
-@interface CitraWrapper : NSObject
+@interface CitraWrapper : NSObject {
+    CAMetalLayer *_metalLayer;
+    NSString *_path;
+    
+    NSThread *_thread;
+}
+
+@property (nonatomic, readwrite) BOOL isPaused, isRunning;
+
 +(CitraWrapper *) sharedInstance;
 
 -(uint16_t*) GetIcon:(NSString *)path;
 -(NSString *) GetPublisher:(NSString *)path;
 -(NSString *) GetTitle:(NSString *)path;
+
+
+-(void) useMetalLayer:(CAMetalLayer *)layer;
+-(void) load:(NSString *)path;
+-(void) pause;
+-(void) run;
+-(void) start;
+
+
+-(void) touchesBegan:(CGPoint)point;
+-(void) touchesMoved:(CGPoint)point;
+-(void) touchesEnded;
 @end
 NS_ASSUME_NONNULL_END

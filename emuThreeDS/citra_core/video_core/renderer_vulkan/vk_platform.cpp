@@ -23,80 +23,21 @@
 namespace Vulkan {
 
 vk::DynamicLoader& GetVulkanLoader() {
-#ifdef __APPLE__
-    try {
-        // Attempt to load system Vulkan first, since it may support more capabilities like
-        // validation layers.
-        static vk::DynamicLoader dl;
-        return dl;
-    } catch (std::runtime_error&) {
-        // Fall back to directly loading bundled MoltenVK library.
-        static vk::DynamicLoader dl("libMoltenVK.dylib");
-        return dl;
-    }
-#else
-    static vk::DynamicLoader dl;
+    static vk::DynamicLoader dl("@executable_path/Frameworks/libMoltenVK.dylib");
     return dl;
-#endif
 }
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::EmuWindow& emu_window) {
     const auto& window_info = emu_window.GetWindowInfo();
     vk::SurfaceKHR surface{};
 
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-    if (window_info.type == Frontend::WindowSystemType::Windows) {
-        const vk::Win32SurfaceCreateInfoKHR win32_ci = {
-            .hinstance = nullptr, .hwnd = static_cast<HWND>(window_info.render_surface)};
+    const vk::MetalSurfaceCreateInfoEXT macos_ci = {
+        .pLayer = static_cast<const CAMetalLayer*>(window_info.render_surface)};
 
-        if (instance.createWin32SurfaceKHR(&win32_ci, nullptr, &surface) != vk::Result::eSuccess) {
-            LOG_CRITICAL(Render_Vulkan, "Failed to initialize Win32 surface");
-            UNREACHABLE();
-        }
+    if (instance.createMetalSurfaceEXT(&macos_ci, nullptr, &surface) != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan, "Failed to initialize MacOS surface");
+        UNREACHABLE();
     }
-#elif defined(VK_USE_PLATFORM_XLIB_KHR) || defined(VK_USE_PLATFORM_WAYLAND_KHR)
-    if (window_info.type == Frontend::WindowSystemType::X11) {
-        const vk::XlibSurfaceCreateInfoKHR xlib_ci = {
-            .dpy = static_cast<Display*>(window_info.display_connection),
-            .window = reinterpret_cast<Window>(window_info.render_surface)};
-
-        if (instance.createXlibSurfaceKHR(&xlib_ci, nullptr, &surface) != vk::Result::eSuccess) {
-            LOG_ERROR(Render_Vulkan, "Failed to initialize Xlib surface");
-            UNREACHABLE();
-        }
-    } else if (window_info.type == Frontend::WindowSystemType::Wayland) {
-        const vk::WaylandSurfaceCreateInfoKHR wayland_ci = {
-            .display = static_cast<wl_display*>(window_info.display_connection),
-            .surface = static_cast<wl_surface*>(window_info.render_surface)};
-
-        if (instance.createWaylandSurfaceKHR(&wayland_ci, nullptr, &surface) !=
-            vk::Result::eSuccess) {
-            LOG_ERROR(Render_Vulkan, "Failed to initialize Wayland surface");
-            UNREACHABLE();
-        }
-    }
-#elif defined(VK_USE_PLATFORM_METAL_EXT)
-    if (window_info.type == Frontend::WindowSystemType::MacOS) {
-        const vk::MetalSurfaceCreateInfoEXT macos_ci = {
-            .pLayer = static_cast<const CAMetalLayer*>(window_info.render_surface)};
-
-        if (instance.createMetalSurfaceEXT(&macos_ci, nullptr, &surface) != vk::Result::eSuccess) {
-            LOG_CRITICAL(Render_Vulkan, "Failed to initialize MacOS surface");
-            UNREACHABLE();
-        }
-    }
-#elif defined(VK_USE_PLATFORM_ANDROID_KHR)
-    if (window_info.type == Frontend::WindowSystemType::Android) {
-        vk::AndroidSurfaceCreateInfoKHR android_ci = {
-            .window = reinterpret_cast<ANativeWindow*>(window_info.render_surface)};
-
-        if (instance.createAndroidSurfaceKHR(&android_ci, nullptr, &surface) !=
-            vk::Result::eSuccess) {
-            LOG_CRITICAL(Render_Vulkan, "Failed to initialize Android surface");
-            UNREACHABLE();
-        }
-    }
-#endif
 
     if (!surface) {
         LOG_CRITICAL(Render_Vulkan, "Presentation not supported on this platform");

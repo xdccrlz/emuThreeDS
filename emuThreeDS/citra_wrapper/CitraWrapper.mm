@@ -8,146 +8,15 @@
 #include <Foundation/Foundation.h>
 #import "CitraWrapper.h"
 
-#include "core/hle/service/am/am.h"
-#include "core/hle/service/fs/archive.h"
-#include "core/loader/loader.h"
+#include "config.h"
+#include "file_handle.h"
+#include "core/core.h"
 #include "core/loader/smdh.h"
+#include "emu_window_vk.h"
+#include "game_info.h"
 
-
-namespace GameInfo {
-    std::vector<uint8_t> GetSMDHData(std::string physical_name) {
-        std::unique_ptr<Loader::AppLoader> loader = Loader::GetLoader(physical_name);
-        if (!loader) {
-            return {};
-        }
-
-        uint64_t program_id = 0;
-        loader->ReadProgramId(program_id);
-
-        std::vector<uint8_t> smdh = [program_id, &loader]() -> std::vector<uint8_t> {
-            std::vector<uint8_t> original_smdh;
-            loader->ReadIcon(original_smdh);
-
-            if (program_id < 0x00040000'00000000 || program_id > 0x00040000'FFFFFFFF)
-                return original_smdh;
-
-            std::string update_path = Service::AM::GetTitleContentPath(Service::FS::MediaType::SDMC, program_id + 0x0000000E'00000000);
-
-            if (!FileUtil::Exists(update_path))
-                return original_smdh;
-
-            std::unique_ptr<Loader::AppLoader> update_loader = Loader::GetLoader(update_path);
-
-            if (!update_loader)
-                return original_smdh;
-
-            std::vector<uint8_t> update_smdh;
-            update_loader->ReadIcon(update_smdh);
-            return update_smdh;
-        }();
-
-        return smdh;
-    }
-    
-    
-    std::vector<uint16_t> GetIcon(std::string physical_name) {
-        std::vector<uint8_t> smdh_data = GetSMDHData(physical_name);
-
-        if (!Loader::IsValidSMDH(smdh_data)) {
-            // SMDH is not valid, return null
-            return std::vector<uint16_t>(0, 0);
-        }
-
-        Loader::SMDH smdh;
-        memcpy(&smdh, smdh_data.data(), sizeof(Loader::SMDH));
-
-        // Always get a 48x48(large) icon
-        std::vector<uint16_t> icon_data = smdh.GetIcon(true);
-        return icon_data;
-    }
-    
-
-    std::u16string GetPublisher(std::string physical_name) {
-        Loader::SMDH::TitleLanguage language = Loader::SMDH::TitleLanguage::English;
-        std::vector<uint8_t> smdh_data = GetSMDHData(physical_name);
-
-        if (!Loader::IsValidSMDH(smdh_data)) {
-            // SMDH is not valid, return null
-            return {};
-        }
-
-        Loader::SMDH smdh;
-        memcpy(&smdh, smdh_data.data(), sizeof(Loader::SMDH));
-
-        // Get the Publisher's name from SMDH in UTF-16 format
-        char16_t* publisher;
-        publisher =
-            reinterpret_cast<char16_t*>(smdh.titles[static_cast<int>(language)].publisher.data());
-
-        return publisher;
-    }
-    
-    std::string GetRegions(std::string physical_name) {
-        std::vector<uint8_t> smdh_data = GetSMDHData(physical_name);
-
-        if (!Loader::IsValidSMDH(smdh_data)) {
-            // SMDH is not valid, return "Invalid region"
-            return "Invalid region";
-        }
-
-        Loader::SMDH smdh;
-        memcpy(&smdh, smdh_data.data(), sizeof(Loader::SMDH));
-
-        using GameRegion = Loader::SMDH::GameRegion;
-        static const std::map<GameRegion, const char*> regions_map = {
-            {GameRegion::Japan, "Japan"},   {GameRegion::NorthAmerica, "North America"},
-            {GameRegion::Europe, "Europe"}, {GameRegion::Australia, "Australia"},
-            {GameRegion::China, "China"},   {GameRegion::Korea, "Korea"},
-            {GameRegion::Taiwan, "Taiwan"}};
-        std::vector<GameRegion> regions = smdh.GetRegions();
-
-        if (regions.empty()) {
-            return "Invalid region";
-        }
-
-        const bool region_free =
-            std::all_of(regions_map.begin(), regions_map.end(), [&regions](const auto& it) {
-                return std::find(regions.begin(), regions.end(), it.first) != regions.end();
-            });
-
-        if (region_free) {
-            return "Region free";
-        }
-
-        const std::string separator = ", ";
-        std::string result = regions_map.at(regions.front());
-        for (auto region = ++regions.begin(); region != regions.end(); ++region) {
-            result += separator + regions_map.at(*region);
-        }
-
-        return result;
-    }
-    
-    std::u16string GetTitle(std::string physical_name) {
-        Loader::SMDH::TitleLanguage language = Loader::SMDH::TitleLanguage::English;
-        std::vector<uint8_t> smdh_data = GetSMDHData(physical_name);
-
-        if (!Loader::IsValidSMDH(smdh_data)) {
-            // SMDH is not valid, return null
-            return {};
-        }
-
-        Loader::SMDH smdh;
-        memcpy(&smdh, smdh_data.data(), sizeof(Loader::SMDH));
-
-        // Get the title from SMDH in UTF-16 format
-        std::u16string title{
-            reinterpret_cast<char16_t*>(smdh.titles[static_cast<int>(language)].long_title.data())};
-
-        return title;
-    }
-}
-
+Core::System& core{Core::System::GetInstance()};
+std::unique_ptr<EmuWindow_VK> emu_window;
 
 @implementation CitraWrapper
 +(CitraWrapper *) sharedInstance {
@@ -164,7 +33,7 @@ namespace GameInfo {
 
 -(uint16_t*) GetIcon:(NSString *)path {
     auto icon = GameInfo::GetIcon(std::string([path UTF8String]));
-    return icon.data();
+    return icon.data(); // huh? "Address of stack memory associated with local variable 'icon' returned"
 }
 
 -(NSString *) GetPublisher:(NSString *)path {
@@ -175,5 +44,82 @@ namespace GameInfo {
 -(NSString *) GetTitle:(NSString *)path {
     auto title = GameInfo::GetTitle(std::string([path UTF8String]));
     return [NSString stringWithCharacters:(const unichar*)title.c_str() length:title.length()];
+}
+
+
+-(void) useMetalLayer:(CAMetalLayer *)layer {
+    _metalLayer = layer;
+    emu_window = std::make_unique<EmuWindow_VK>((__bridge CA::MetalLayer*)_metalLayer);
+}
+
+-(void) load:(NSString *)path {
+    Config{};
+    
+    Settings::values.layout_option.SetValue(Settings::LayoutOption::Default);
+    Settings::values.custom_layout.SetValue(true);
+    Settings::values.custom_top_top.SetValue(0);
+    Settings::values.custom_top_left.SetValue(0);
+    Settings::values.custom_top_bottom.SetValue(ResolutionHandle::GetScreenWidth() * 0.6);
+    Settings::values.custom_top_right.SetValue(ResolutionHandle::GetScreenWidth());
+    
+    Settings::values.custom_bottom_top.SetValue(ResolutionHandle::GetScreenWidth() * 0.6);
+    Settings::values.custom_bottom_left.SetValue(0);
+    Settings::values.custom_bottom_bottom.SetValue((ResolutionHandle::GetScreenWidth() * 0.6) + (ResolutionHandle::GetScreenWidth() * 0.75));
+    Settings::values.custom_bottom_right.SetValue(ResolutionHandle::GetScreenWidth());
+    
+    Settings::values.resolution_factor.SetValue(2);
+    
+    Settings::Apply();
+    
+    _thread = [[NSThread alloc] initWithTarget:self selector:@selector(start) object:NULL];
+    [_thread setName:@"emuThreeDS"];
+    [_thread setQualityOfService:NSQualityOfServiceUserInteractive];
+    [_thread setThreadPriority:1.0];
+    
+    _path = path;
+}
+
+-(void) pause {
+    _isPaused = true;
+}
+
+-(void) run {
+    if (![_thread isExecuting])
+        auto resultStatus = core.Load(*emu_window, std::string([_path UTF8String]));
+    
+    _isRunning = true;
+    _isPaused = false;
+    if (![_thread isExecuting])
+        [_thread start];
+}
+
+-(void) start {
+    while (_isRunning) {
+        if (!_isPaused) {
+            Settings::values.volume.SetValue(1);
+            Core::System::ResultStatus result = core.RunLoop();
+            switch (result) {
+                default:
+                    break;
+            }
+        } else {
+            Settings::values.volume.SetValue(0);
+            emu_window->PollEvents();
+        }
+    }
+}
+
+
+-(void) touchesBegan:(CGPoint)point {
+    NSLog(@"%d, %d", point.x, point.y);
+    emu_window->OnTouchEvent((point.x * [[UIScreen mainScreen] scale]) + 0.5, (point.y * [[UIScreen mainScreen] scale]) + 0.5, true);
+}
+
+-(void) touchesMoved:(CGPoint)point {
+    emu_window->OnTouchMoved((point.x * [[UIScreen mainScreen] scale]) + 0.5, (point.y * [[UIScreen mainScreen] scale]) + 0.5);
+}
+
+-(void) touchesEnded {
+    emu_window->OnTouchReleased();
 }
 @end

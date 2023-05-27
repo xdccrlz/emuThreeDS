@@ -7,6 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C122F1D52A21C54200EB2F2F /* Rom.swift in Sources */ = {isa = PBXBuildFile; fileRef = C122F1D42A21C54200EB2F2F /* Rom.swift */; };
+		C122F1D72A21C54C00EB2F2F /* Initial.swift in Sources */ = {isa = PBXBuildFile; fileRef = C122F1D62A21C54C00EB2F2F /* Initial.swift */; };
+		C122F1DA2A21C58900EB2F2F /* RomView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C122F1D92A21C58900EB2F2F /* RomView.swift */; };
+		C122F1DC2A21C71F00EB2F2F /* EmulationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C122F1DB2A21C71F00EB2F2F /* EmulationManager.swift */; };
+		C122F1E32A21C93000EB2F2F /* game_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C122F1E12A21C93000EB2F2F /* game_info.cpp */; };
+		C122F1EA2A21CB2600EB2F2F /* emu_window.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C122F1E82A21CB2600EB2F2F /* emu_window.cpp */; };
+		C122F1EE2A21CC1900EB2F2F /* emu_window_vk.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C122F1EC2A21CC1900EB2F2F /* emu_window_vk.cpp */; };
+		C122F1FD2A21D59B00EB2F2F /* file_handle.mm in Sources */ = {isa = PBXBuildFile; fileRef = C122F1FB2A21D59B00EB2F2F /* file_handle.mm */; };
+		C122F2042A21D6C600EB2F2F /* config.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C122F2022A21D6C600EB2F2F /* config.cpp */; };
+		C122F2082A21D74700EB2F2F /* ini.c in Sources */ = {isa = PBXBuildFile; fileRef = C122F2062A21D74700EB2F2F /* ini.c */; };
+		C122F2092A21D74700EB2F2F /* INIReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C122F2072A21D74700EB2F2F /* INIReader.cpp */; };
+		C122F2102A21DCB700EB2F2F /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */; };
+		C122F2112A21DCBB00EB2F2F /* libMoltenVK.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C15DC0CB2A1B40C00053B8EA /* emuThreeDSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */; };
 		C15DC0CD2A1B40C00053B8EA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15DC0CC2A1B40C00053B8EA /* ContentView.swift */; };
 		C15DC0CF2A1B40C10053B8EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C15DC0CE2A1B40C10053B8EA /* Assets.xcassets */; };
@@ -622,6 +635,7 @@
 				C15DC1642A1B42850053B8EA /* libavcodec.framework in Embed Frameworks */,
 				C15DC7612A1B4A7E0053B8EA /* libavformat.framework in Embed Frameworks */,
 				C15DC0EE2A1B410C0053B8EA /* libdynarmic.xcframework in Embed Frameworks */,
+				C122F2112A21DCBB00EB2F2F /* libMoltenVK.dylib in Embed Frameworks */,
 				C15E09C52A1B674A00D70564 /* libMachineIndependent.xcframework in Embed Frameworks */,
 				C15DC0FB2A1B41160053B8EA /* libmcl.xcframework in Embed Frameworks */,
 				C15E09C12A1B674500D70564 /* libglslang.xcframework in Embed Frameworks */,
@@ -642,6 +656,23 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C122F1D42A21C54200EB2F2F /* Rom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rom.swift; sourceTree = "<group>"; };
+		C122F1D62A21C54C00EB2F2F /* Initial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Initial.swift; sourceTree = "<group>"; };
+		C122F1D92A21C58900EB2F2F /* RomView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RomView.swift; sourceTree = "<group>"; };
+		C122F1DB2A21C71F00EB2F2F /* EmulationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationManager.swift; sourceTree = "<group>"; };
+		C122F1E12A21C93000EB2F2F /* game_info.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = game_info.cpp; sourceTree = "<group>"; };
+		C122F1E22A21C93000EB2F2F /* game_info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = game_info.h; sourceTree = "<group>"; };
+		C122F1E82A21CB2600EB2F2F /* emu_window.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emu_window.cpp; sourceTree = "<group>"; };
+		C122F1E92A21CB2600EB2F2F /* emu_window.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = emu_window.h; sourceTree = "<group>"; };
+		C122F1EC2A21CC1900EB2F2F /* emu_window_vk.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = emu_window_vk.cpp; sourceTree = "<group>"; };
+		C122F1ED2A21CC1900EB2F2F /* emu_window_vk.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = emu_window_vk.h; sourceTree = "<group>"; };
+		C122F1FB2A21D59B00EB2F2F /* file_handle.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = file_handle.mm; sourceTree = "<group>"; };
+		C122F1FC2A21D59B00EB2F2F /* file_handle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = file_handle.h; sourceTree = "<group>"; };
+		C122F2022A21D6C600EB2F2F /* config.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = config.cpp; sourceTree = "<group>"; };
+		C122F2032A21D6C600EB2F2F /* config.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		C122F2062A21D74700EB2F2F /* ini.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ini.c; sourceTree = "<group>"; };
+		C122F2072A21D74700EB2F2F /* INIReader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = INIReader.cpp; sourceTree = "<group>"; };
+		C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libMoltenVK.dylib; sourceTree = "<group>"; };
 		C15DC0C72A1B40C00053B8EA /* emuThreeDS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = emuThreeDS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = emuThreeDSApp.swift; sourceTree = "<group>"; };
 		C15DC0CC2A1B40C00053B8EA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -1236,6 +1267,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C122F2102A21DCB700EB2F2F /* libMoltenVK.dylib in Frameworks */,
 				C15E07F82A1B5B1600D70564 /* CoreAudio.framework in Frameworks */,
 				C15E09C22A1B674700D70564 /* libHLSL.xcframework in Frameworks */,
 				C15E09C02A1B674500D70564 /* libglslang.xcframework in Frameworks */,
@@ -1267,6 +1299,72 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		C122F1D22A21C53500EB2F2F /* Swift */ = {
+			isa = PBXGroup;
+			children = (
+				C122F1D32A21C53A00EB2F2F /* Classes */,
+				C122F1D82A21C56700EB2F2F /* Views */,
+			);
+			path = Swift;
+			sourceTree = "<group>";
+		};
+		C122F1D32A21C53A00EB2F2F /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				C1A3E22D2A1F399300440F83 /* Bruno.swift */,
+				C122F1DB2A21C71F00EB2F2F /* EmulationManager.swift */,
+				C122F1D62A21C54C00EB2F2F /* Initial.swift */,
+				C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */,
+				C122F1D42A21C54200EB2F2F /* Rom.swift */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
+		C122F1D82A21C56700EB2F2F /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C15DC0CC2A1B40C00053B8EA /* ContentView.swift */,
+				C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */,
+				C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */,
+				C1A3E21C2A1F139300440F83 /* SettingsView.swift */,
+				C122F1D92A21C58900EB2F2F /* RomView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C122F1EB2A21CC0600EB2F2F /* emu_window */ = {
+			isa = PBXGroup;
+			children = (
+				C122F1E92A21CB2600EB2F2F /* emu_window.h */,
+				C122F1E82A21CB2600EB2F2F /* emu_window.cpp */,
+				C122F1ED2A21CC1900EB2F2F /* emu_window_vk.h */,
+				C122F1EC2A21CC1900EB2F2F /* emu_window_vk.cpp */,
+			);
+			path = emu_window;
+			sourceTree = "<group>";
+		};
+		C122F2052A21D74700EB2F2F /* inih */ = {
+			isa = PBXGroup;
+			children = (
+				C122F2062A21D74700EB2F2F /* ini.c */,
+				C122F2072A21D74700EB2F2F /* INIReader.cpp */,
+			);
+			path = inih;
+			sourceTree = "<group>";
+		};
+		C122F20A2A21D95000EB2F2F /* helpers */ = {
+			isa = PBXGroup;
+			children = (
+				C122F2032A21D6C600EB2F2F /* config.h */,
+				C122F2022A21D6C600EB2F2F /* config.cpp */,
+				C122F1FC2A21D59B00EB2F2F /* file_handle.h */,
+				C122F1FB2A21D59B00EB2F2F /* file_handle.mm */,
+				C122F1E22A21C93000EB2F2F /* game_info.h */,
+				C122F1E12A21C93000EB2F2F /* game_info.cpp */,
+			);
+			path = helpers;
+			sourceTree = "<group>";
+		};
 		C15DC0BE2A1B40C00053B8EA = {
 			isa = PBXGroup;
 			children = (
@@ -1287,17 +1385,12 @@
 		C15DC0C92A1B40C00053B8EA /* emuThreeDS */ = {
 			isa = PBXGroup;
 			children = (
+				C122F1D22A21C53500EB2F2F /* Swift */,
 				C1A3E2222A1F1DBF00440F83 /* Info.plist */,
 				C15DC1022A1B41FD0053B8EA /* citra_core */,
 				C17FAB882A1B74130020FF0B /* citra_wrapper */,
 				C15DC0D82A1B40D00053B8EA /* externals */,
 				C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */,
-				C1A3E22D2A1F399300440F83 /* Bruno.swift */,
-				C15DC0CC2A1B40C00053B8EA /* ContentView.swift */,
-				C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */,
-				C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */,
-				C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */,
-				C1A3E21C2A1F139300440F83 /* SettingsView.swift */,
 				C15DC0CE2A1B40C10053B8EA /* Assets.xcassets */,
 				C15DC0D02A1B40C10053B8EA /* Preview Content */,
 			);
@@ -1323,6 +1416,7 @@
 				C15E09B32A1B673200D70564 /* libglslang.xcframework */,
 				C15E09B02A1B673200D70564 /* libHLSL.xcframework */,
 				C15E09B22A1B673200D70564 /* libMachineIndependent.xcframework */,
+				C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */,
 				C15E09B52A1B673200D70564 /* libOGLCompiler.xcframework */,
 				C15E09B42A1B673200D70564 /* libOSDependent.xcframework */,
 				C15E09B62A1B673200D70564 /* libSPIRV.xcframework */,
@@ -2236,6 +2330,7 @@
 			isa = PBXGroup;
 			children = (
 				C15E08092A1B5D9600D70564 /* cryptopp */,
+				C122F2052A21D74700EB2F2F /* inih */,
 				C15DC7A82A1B4FCB0053B8EA /* lodepng */,
 				C15DC7662A1B4B2D0053B8EA /* nihstro */,
 			);
@@ -2516,6 +2611,8 @@
 		C17FAB882A1B74130020FF0B /* citra_wrapper */ = {
 			isa = PBXGroup;
 			children = (
+				C122F1EB2A21CC0600EB2F2F /* emu_window */,
+				C122F20A2A21D95000EB2F2F /* helpers */,
 				C17FAB892A1B74380020FF0B /* CitraWrapper.h */,
 				C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */,
 				C1A3E22A2A1F2B3600440F83 /* DirectoryManager.h */,
@@ -2645,6 +2742,7 @@
 				C15DC49E2A1B438B0053B8EA /* archive_sdmc.cpp in Sources */,
 				C15DC1D62A1B432A0053B8EA /* cityhash.cpp in Sources */,
 				C15DC4C22A1B438B0053B8EA /* arm_dynarmic.cpp in Sources */,
+				C122F1D52A21C54200EB2F2F /* Rom.swift in Sources */,
 				C15E091F2A1B5D9700D70564 /* mqueue.cpp in Sources */,
 				C15DC42E2A1B438B0053B8EA /* boss_u.cpp in Sources */,
 				C15DC7762A1B4B2D0053B8EA /* common.cpp in Sources */,
@@ -2701,6 +2799,7 @@
 				C15DC47A2A1B438B0053B8EA /* svc.cpp in Sources */,
 				C15E098C2A1B5D9700D70564 /* tigertab.cpp in Sources */,
 				C15E09422A1B5D9700D70564 /* esign.cpp in Sources */,
+				C122F1EE2A21CC1900EB2F2F /* emu_window_vk.cpp in Sources */,
 				C15DC4462A1B438B0053B8EA /* uds_data.cpp in Sources */,
 				C15E09402A1B5D9700D70564 /* shark.cpp in Sources */,
 				C15E09132A1B5D9700D70564 /* donna_sse.cpp in Sources */,
@@ -2735,6 +2834,7 @@
 				C15DC4CE2A1B438B0053B8EA /* vfpsingle.cpp in Sources */,
 				C15E093E2A1B5D9700D70564 /* sha3.cpp in Sources */,
 				C15DC1D32A1B432A0053B8EA /* android_storage.cpp in Sources */,
+				C122F1D72A21C54C00EB2F2F /* Initial.swift in Sources */,
 				C15DC59F2A1B46380053B8EA /* vk_common.cpp in Sources */,
 				C15DC4882A1B438B0053B8EA /* client_port.cpp in Sources */,
 				C15DC1CB2A1B432A0053B8EA /* file_util.cpp in Sources */,
@@ -2782,6 +2882,7 @@
 				C15DC4932A1B438B0053B8EA /* emu_window.cpp in Sources */,
 				C15E08F92A1B5D9700D70564 /* cham_simd.cpp in Sources */,
 				C15DC59D2A1B46380053B8EA /* vk_scheduler.cpp in Sources */,
+				C122F1FD2A21D59B00EB2F2F /* file_handle.mm in Sources */,
 				C15DC5BC2A1B46380053B8EA /* shader_interpreter.cpp in Sources */,
 				C15DC4B02A1B438B0053B8EA /* archive_ncch.cpp in Sources */,
 				C15E09892A1B5D9700D70564 /* rabbit.cpp in Sources */,
@@ -2833,9 +2934,11 @@
 				C15DC46A2A1B438B0053B8EA /* plgldr.cpp in Sources */,
 				C15DC41B2A1B438B0053B8EA /* nim_u.cpp in Sources */,
 				C15DC5B12A1B46380053B8EA /* sw_proctex.cpp in Sources */,
+				C122F1DA2A21C58900EB2F2F /* RomView.swift in Sources */,
 				C15DC5952A1B46380053B8EA /* vk_descriptor_manager.cpp in Sources */,
 				C15DC7A52A1B4BF00053B8EA /* packet.cpp in Sources */,
 				C15DC5AD2A1B46380053B8EA /* surface_params.cpp in Sources */,
+				C122F1EA2A21CB2600EB2F2F /* emu_window.cpp in Sources */,
 				C15DC47D2A1B438B0053B8EA /* mutex.cpp in Sources */,
 				C15E09102A1B5D9700D70564 /* rng.cpp in Sources */,
 				C15DC4302A1B438B0053B8EA /* boss_p.cpp in Sources */,
@@ -2884,6 +2987,7 @@
 				C15DC4972A1B438B0053B8EA /* interface.cpp in Sources */,
 				C15E09802A1B5D9700D70564 /* kalyna.cpp in Sources */,
 				C15DC4A52A1B438B0053B8EA /* archive_backend.cpp in Sources */,
+				C122F1E32A21C93000EB2F2F /* game_info.cpp in Sources */,
 				C15DC4BF2A1B438B0053B8EA /* 3dsx.cpp in Sources */,
 				C15DC4372A1B438B0053B8EA /* cfg_nor.cpp in Sources */,
 				C15DC1492A1B421F0053B8EA /* filter.cpp in Sources */,
@@ -2994,6 +3098,7 @@
 				C15E09722A1B5D9700D70564 /* wake.cpp in Sources */,
 				C15E08F72A1B5D9700D70564 /* adler32.cpp in Sources */,
 				C15E091A2A1B5D9700D70564 /* cmac.cpp in Sources */,
+				C122F2092A21D74700EB2F2F /* INIReader.cpp in Sources */,
 				C15DC1542A1B421F0053B8EA /* input_details.cpp in Sources */,
 				C15DC47F2A1B438B0053B8EA /* process.cpp in Sources */,
 				C15DC49A2A1B438B0053B8EA /* image_interface.cpp in Sources */,
@@ -3050,6 +3155,7 @@
 				C15DC7AF2A1B4FCB0053B8EA /* lodepng_util.cpp in Sources */,
 				C15DC4422A1B438B0053B8EA /* nwm_cec.cpp in Sources */,
 				C15E092F2A1B5D9700D70564 /* ccm.cpp in Sources */,
+				C122F2042A21D6C600EB2F2F /* config.cpp in Sources */,
 				C15DC4742A1B438B0053B8EA /* qtm_s.cpp in Sources */,
 				C15DC5AC2A1B46380053B8EA /* pixel_format.cpp in Sources */,
 				C15DC45F2A1B438B0053B8EA /* apt_u.cpp in Sources */,
@@ -3103,6 +3209,7 @@
 				C15DC1D12A1B432A0053B8EA /* zstd_compression.cpp in Sources */,
 				C15E09352A1B5D9700D70564 /* gzip.cpp in Sources */,
 				C15DC4982A1B438B0053B8EA /* blank_camera.cpp in Sources */,
+				C122F1DC2A21C71F00EB2F2F /* EmulationManager.swift in Sources */,
 				C15E09062A1B5D9700D70564 /* seed.cpp in Sources */,
 				C15DC4B82A1B438B0053B8EA /* core_timing.cpp in Sources */,
 				C15E09952A1B5D9700D70564 /* rsa.cpp in Sources */,
@@ -3115,6 +3222,7 @@
 				C15E09472A1B5D9700D70564 /* tiger.cpp in Sources */,
 				C15DC4532A1B438B0053B8EA /* service.cpp in Sources */,
 				C15E09982A1B5D9700D70564 /* dll.cpp in Sources */,
+				C122F2082A21D74700EB2F2F /* ini.c in Sources */,
 				C15E09412A1B5D9700D70564 /* poly1305.cpp in Sources */,
 				C15DC4BE2A1B438B0053B8EA /* elf.cpp in Sources */,
 				C15DC3FA2A1B438A0053B8EA /* rsa.cpp in Sources */,
@@ -3333,7 +3441,7 @@
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
 					"\"$(SRCROOT)/emuThreeDS/externals/source/cryptopp\"",
-					/usr/local/include,
+					"$(HOME)/VulkanSDK/1.3.243.0/MoltenVK/include",
 				);
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -3392,7 +3500,7 @@
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
 					"\"$(SRCROOT)/emuThreeDS/externals/source/cryptopp\"",
-					/usr/local/include,
+					"$(HOME)/VulkanSDK/1.3.243.0/MoltenVK/include",
 				);
 				TARGETED_DEVICE_FAMILY = 1;
 			};
