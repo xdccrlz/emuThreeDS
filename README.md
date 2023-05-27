@@ -36,12 +36,11 @@ Go to **[CHANGELOG.md](resources/markdowns/CHANGELOG.md)** to see changes in the
 ## Screenshots
 
 <span>
-    <img src="resources/images/roms_1.png" width="320px"/>
-    <img src="resources/images/settings_1.png" width="320px"/>
+    <img src="resources/images/library_1.png" width="320px"/>
+    <img src="resources/images/library_2.png" width="320px"/>
     <br/>
+    <img src="resources/images/library_3.png" width="320px"/>
     <img src="resources/images/ingame_1.png" width="320px"/>
     <br/>
-    <img src="resources/images/ingame_2.png" width="640px"/>
-    <br/>
-    <img src="resources/images/ingame_3.png" width="640px"/>
+    <img src="resources/images/ingame_2.png" width="320px"/>
 </span>
