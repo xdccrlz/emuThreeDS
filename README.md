@@ -37,10 +37,7 @@ Go to **[CHANGELOG.md](resources/markdowns/CHANGELOG.md)** to see changes in the
 
 <span>
     <img src="resources/images/library_1.png" width="320px"/>
-    <img src="resources/images/library_2.png" width="320px"/>
-    <br/>
-    <img src="resources/images/library_3.png" width="320px"/>
     <img src="resources/images/ingame_1.png" width="320px"/>
     <br/>
-    <img src="resources/images/ingame_2.png" width="320px"/>
+    <img src="resources/images/ingame_2.png" width="643px"/>
 </span>
