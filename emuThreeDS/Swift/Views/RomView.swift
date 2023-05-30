@@ -33,6 +33,9 @@ struct RomView: View {
                         .font(.caption)
                         .foregroundColor(.yellow)
                 }
+                Text(rom.regions)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
         }
     }

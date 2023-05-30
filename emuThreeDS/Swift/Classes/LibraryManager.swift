@@ -48,10 +48,12 @@ class LibraryManager {
                 
                 
                 let publisher = wrapper.getPublisher(path)
+                let region = wrapper.getRegion(path)
+                print(region)
                 let title = wrapper.getTitle(path).replacingOccurrences(of: "\n", with: " ") // some games have newlines...
                 
                 let initial = Initial(character: String(title.first?.uppercased() ?? ""))
-                let rom = Rom(publisher: publisher, size: size, title: title, path: path)
+                let rom = Rom(publisher: publisher, regions: region, size: size, title: title, path: path)
                 partialResult[initial] == nil ? partialResult[initial] = [rom] : partialResult[initial]!.append(rom)
             }
         } catch {

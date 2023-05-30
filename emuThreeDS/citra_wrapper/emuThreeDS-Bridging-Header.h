@@ -7,5 +7,6 @@
 
 #pragma once
 
-#include "CitraWrapper.h"
-#include "DirectoryManager.h"
+#import "InputBridge.h"
+#import "CitraWrapper.h"
+#import "DirectoryManager.h"

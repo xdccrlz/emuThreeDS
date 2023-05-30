@@ -32,6 +32,8 @@ public:
     virtual void TryPresenting() = 0;
     virtual void DonePresenting() = 0;
     
+    bool is_portrait;
+    
 protected:
     void OnFramebufferSizeChanged();
     

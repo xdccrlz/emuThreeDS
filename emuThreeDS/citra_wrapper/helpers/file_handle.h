@@ -7,7 +7,16 @@
 
 #pragma once
 
+#include <string>
+
 namespace ResolutionHandle {
+float StatusBarHeight();
 float GetScreenWidth(), GetScreenHeight();
 bool IsPortrait();
+
+float CombinedInsets();
+}
+
+namespace DefaultsHandle {
+bool BoolForKey(std::string key);
 }

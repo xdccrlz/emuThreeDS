@@ -20,6 +20,9 @@
 		C122F2092A21D74700EB2F2F /* INIReader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C122F2072A21D74700EB2F2F /* INIReader.cpp */; };
 		C122F2102A21DCB700EB2F2F /* libMoltenVK.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */; };
 		C122F2112A21DCBB00EB2F2F /* libMoltenVK.dylib in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C12D91CF2A2588DC00349B4C /* EmulationViewControllerRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D91CE2A2588DC00349B4C /* EmulationViewControllerRepresentable.swift */; };
+		C12D91D12A25952400349B4C /* GlobalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D91D02A25952400349B4C /* GlobalManager.swift */; };
+		C12D91D42A25968B00349B4C /* EmulationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12D91D32A25968B00349B4C /* EmulationViewController.swift */; };
 		C15DC0CB2A1B40C00053B8EA /* emuThreeDSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */; };
 		C15DC0CD2A1B40C00053B8EA /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C15DC0CC2A1B40C00053B8EA /* ContentView.swift */; };
 		C15DC0CF2A1B40C10053B8EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C15DC0CE2A1B40C10053B8EA /* Assets.xcassets */; };
@@ -613,6 +616,10 @@
 		C15E09C92A1B674E00D70564 /* libOSDependent.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B42A1B673200D70564 /* libOSDependent.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C15E09CA2A1B675000D70564 /* libSPIRV.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B62A1B673200D70564 /* libSPIRV.xcframework */; };
 		C15E09CB2A1B675100D70564 /* libSPIRV.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = C15E09B62A1B673200D70564 /* libSPIRV.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C16BA7FD2A21F72D00ABC38D /* SuperController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16BA7FC2A21F72D00ABC38D /* SuperController.swift */; };
+		C16BA8042A21F80200ABC38D /* InputBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = C16BA8032A21F80200ABC38D /* InputBridge.mm */; };
+		C16BA8072A21F91800ABC38D /* InputFactory.mm in Sources */ = {isa = PBXBuildFile; fileRef = C16BA8062A21F91800ABC38D /* InputFactory.mm */; };
+		C16BA8092A21FA0200ABC38D /* EmulationInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = C16BA8082A21FA0200ABC38D /* EmulationInput.swift */; };
 		C17FAB8B2A1B74380020FF0B /* CitraWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */; };
 		C17FAB8D2A1B74AD0020FF0B /* EmulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */; };
 		C17FAB8F2A1B74BD0020FF0B /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */; };
@@ -673,6 +680,9 @@
 		C122F2062A21D74700EB2F2F /* ini.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ini.c; sourceTree = "<group>"; };
 		C122F2072A21D74700EB2F2F /* INIReader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = INIReader.cpp; sourceTree = "<group>"; };
 		C122F20F2A21DCB700EB2F2F /* libMoltenVK.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = libMoltenVK.dylib; sourceTree = "<group>"; };
+		C12D91CE2A2588DC00349B4C /* EmulationViewControllerRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationViewControllerRepresentable.swift; sourceTree = "<group>"; };
+		C12D91D02A25952400349B4C /* GlobalManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalManager.swift; sourceTree = "<group>"; };
+		C12D91D32A25968B00349B4C /* EmulationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationViewController.swift; sourceTree = "<group>"; };
 		C15DC0C72A1B40C00053B8EA /* emuThreeDS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = emuThreeDS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = emuThreeDSApp.swift; sourceTree = "<group>"; };
 		C15DC0CC2A1B40C00053B8EA /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -1249,6 +1259,13 @@
 		C15E09B42A1B673200D70564 /* libOSDependent.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libOSDependent.xcframework; sourceTree = "<group>"; };
 		C15E09B52A1B673200D70564 /* libOGLCompiler.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libOGLCompiler.xcframework; sourceTree = "<group>"; };
 		C15E09B62A1B673200D70564 /* libSPIRV.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; path = libSPIRV.xcframework; sourceTree = "<group>"; };
+		C16BA7FC2A21F72D00ABC38D /* SuperController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuperController.swift; sourceTree = "<group>"; };
+		C16BA8022A21F80200ABC38D /* InputBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InputBridge.h; sourceTree = "<group>"; };
+		C16BA8032A21F80200ABC38D /* InputBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = InputBridge.mm; sourceTree = "<group>"; };
+		C16BA8052A21F91800ABC38D /* InputFactory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = InputFactory.h; sourceTree = "<group>"; };
+		C16BA8062A21F91800ABC38D /* InputFactory.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = InputFactory.mm; sourceTree = "<group>"; };
+		C16BA8082A21FA0200ABC38D /* EmulationInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationInput.swift; sourceTree = "<group>"; };
+		C175370B2A235ADC00ABE6DA /* emuThreeDS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = emuThreeDS.entitlements; sourceTree = "<group>"; };
 		C17FAB892A1B74380020FF0B /* CitraWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CitraWrapper.h; sourceTree = "<group>"; };
 		C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CitraWrapper.mm; sourceTree = "<group>"; };
 		C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationView.swift; sourceTree = "<group>"; };
@@ -1302,6 +1319,7 @@
 		C122F1D22A21C53500EB2F2F /* Swift */ = {
 			isa = PBXGroup;
 			children = (
+				C12D91D22A25967A00349B4C /* ViewControllers */,
 				C122F1D32A21C53A00EB2F2F /* Classes */,
 				C122F1D82A21C56700EB2F2F /* Views */,
 			);
@@ -1312,10 +1330,13 @@
 			isa = PBXGroup;
 			children = (
 				C1A3E22D2A1F399300440F83 /* Bruno.swift */,
+				C16BA8082A21FA0200ABC38D /* EmulationInput.swift */,
 				C122F1DB2A21C71F00EB2F2F /* EmulationManager.swift */,
+				C12D91D02A25952400349B4C /* GlobalManager.swift */,
 				C122F1D62A21C54C00EB2F2F /* Initial.swift */,
 				C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */,
 				C122F1D42A21C54200EB2F2F /* Rom.swift */,
+				C16BA7FC2A21F72D00ABC38D /* SuperController.swift */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -1328,6 +1349,7 @@
 				C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */,
 				C1A3E21C2A1F139300440F83 /* SettingsView.swift */,
 				C122F1D92A21C58900EB2F2F /* RomView.swift */,
+				C12D91CE2A2588DC00349B4C /* EmulationViewControllerRepresentable.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1365,6 +1387,14 @@
 			path = helpers;
 			sourceTree = "<group>";
 		};
+		C12D91D22A25967A00349B4C /* ViewControllers */ = {
+			isa = PBXGroup;
+			children = (
+				C12D91D32A25968B00349B4C /* EmulationViewController.swift */,
+			);
+			path = ViewControllers;
+			sourceTree = "<group>";
+		};
 		C15DC0BE2A1B40C00053B8EA = {
 			isa = PBXGroup;
 			children = (
@@ -1385,13 +1415,14 @@
 		C15DC0C92A1B40C00053B8EA /* emuThreeDS */ = {
 			isa = PBXGroup;
 			children = (
+				C175370B2A235ADC00ABE6DA /* emuThreeDS.entitlements */,
 				C122F1D22A21C53500EB2F2F /* Swift */,
-				C1A3E2222A1F1DBF00440F83 /* Info.plist */,
 				C15DC1022A1B41FD0053B8EA /* citra_core */,
 				C17FAB882A1B74130020FF0B /* citra_wrapper */,
 				C15DC0D82A1B40D00053B8EA /* externals */,
 				C15DC0CA2A1B40C00053B8EA /* emuThreeDSApp.swift */,
 				C15DC0CE2A1B40C10053B8EA /* Assets.xcassets */,
+				C1A3E2222A1F1DBF00440F83 /* Info.plist */,
 				C15DC0D02A1B40C10053B8EA /* Preview Content */,
 			);
 			path = emuThreeDS;
@@ -2617,7 +2648,11 @@
 				C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */,
 				C1A3E22A2A1F2B3600440F83 /* DirectoryManager.h */,
 				C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */,
+				C16BA8022A21F80200ABC38D /* InputBridge.h */,
+				C16BA8032A21F80200ABC38D /* InputBridge.mm */,
 				C1A3E2252A1F1F1C00440F83 /* emuThreeDS-Bridging-Header.h */,
+				C16BA8052A21F91800ABC38D /* InputFactory.h */,
+				C16BA8062A21F91800ABC38D /* InputFactory.mm */,
 			);
 			path = citra_wrapper;
 			sourceTree = "<group>";
@@ -2780,6 +2815,7 @@
 				C15E099D2A1B5D9700D70564 /* shacal2.cpp in Sources */,
 				C15DC4072A1B438B0053B8EA /* pm_dbg.cpp in Sources */,
 				C15DC4D82A1B438B0053B8EA /* hio.cpp in Sources */,
+				C12D91D42A25968B00349B4C /* EmulationViewController.swift in Sources */,
 				C15DC4A82A1B438B0053B8EA /* delay_generator.cpp in Sources */,
 				C15DC47B2A1B438B0053B8EA /* ipc.cpp in Sources */,
 				C15DC1C72A1B432A0053B8EA /* string_util.cpp in Sources */,
@@ -2787,6 +2823,7 @@
 				C15E09342A1B5D9700D70564 /* pkcspad.cpp in Sources */,
 				C15E09842A1B5D9700D70564 /* 3way.cpp in Sources */,
 				C15E09912A1B5D9700D70564 /* lsh256.cpp in Sources */,
+				C12D91CF2A2588DC00349B4C /* EmulationViewControllerRepresentable.swift in Sources */,
 				C15E09762A1B5D9700D70564 /* aria.cpp in Sources */,
 				C15DC43F2A1B438B0053B8EA /* http_c.cpp in Sources */,
 				C15DC4672A1B438B0053B8EA /* dlp.cpp in Sources */,
@@ -2858,6 +2895,7 @@
 				C15E09882A1B5D9700D70564 /* shacal2_simd.cpp in Sources */,
 				C15DC1522A1B421F0053B8EA /* lle.cpp in Sources */,
 				C15DC5A52A1B46380053B8EA /* gl_shader_decompiler.cpp in Sources */,
+				C16BA8092A21FA0200ABC38D /* EmulationInput.swift in Sources */,
 				C15DC4642A1B438B0053B8EA /* gsp_gpu.cpp in Sources */,
 				C15DC5AE2A1B46380053B8EA /* debug_utils.cpp in Sources */,
 				C15DC5C22A1B46380053B8EA /* custom_tex_manager.cpp in Sources */,
@@ -2939,6 +2977,7 @@
 				C15DC7A52A1B4BF00053B8EA /* packet.cpp in Sources */,
 				C15DC5AD2A1B46380053B8EA /* surface_params.cpp in Sources */,
 				C122F1EA2A21CB2600EB2F2F /* emu_window.cpp in Sources */,
+				C12D91D12A25952400349B4C /* GlobalManager.swift in Sources */,
 				C15DC47D2A1B438B0053B8EA /* mutex.cpp in Sources */,
 				C15E09102A1B5D9700D70564 /* rng.cpp in Sources */,
 				C15DC4302A1B438B0053B8EA /* boss_p.cpp in Sources */,
@@ -3116,6 +3155,8 @@
 				C15DC4132A1B438B0053B8EA /* ptm_play.cpp in Sources */,
 				C15DC4B22A1B438B0053B8EA /* archive_extsavedata.cpp in Sources */,
 				C15E09582A1B5D9700D70564 /* dh2.cpp in Sources */,
+				C16BA8072A21F91800ABC38D /* InputFactory.mm in Sources */,
+				C16BA8042A21F80200ABC38D /* InputBridge.mm in Sources */,
 				C15DC7752A1B4B2D0053B8EA /* assembler.cpp in Sources */,
 				C15E09152A1B5D9700D70564 /* hc256.cpp in Sources */,
 				C15DC48C2A1B438B0053B8EA /* resource_limit.cpp in Sources */,
@@ -3238,6 +3279,7 @@
 				C15DC4872A1B438B0053B8EA /* timer.cpp in Sources */,
 				C15E08DD2A1B5D9700D70564 /* md5.cpp in Sources */,
 				C15E09282A1B5D9700D70564 /* gf2n_simd.cpp in Sources */,
+				C16BA7FD2A21F72D00ABC38D /* SuperController.swift in Sources */,
 				C15E09272A1B5D9700D70564 /* gcm_simd.cpp in Sources */,
 				C15DC5922A1B46380053B8EA /* vk_resource_pool.cpp in Sources */,
 				C15E09182A1B5D9700D70564 /* gcm.cpp in Sources */,
@@ -3387,10 +3429,11 @@
 		C15DC0D62A1B40C10053B8EA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = DarkAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = emuThreeDS/emuThreeDS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"emuThreeDS/Preview Content\"";
 				DEVELOPMENT_TEAM = Z3ZEABYY6P;
 				ENABLE_PREVIEWS = YES;
@@ -3424,7 +3467,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/emuThreeDS/externals",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.6;
 				OTHER_LDFLAGS = (
 					"-lboost_serialization",
 					"-lboost_program_options",
@@ -3443,17 +3486,18 @@
 					"\"$(SRCROOT)/emuThreeDS/externals/source/cryptopp\"",
 					"$(HOME)/VulkanSDK/1.3.243.0/MoltenVK/include",
 				);
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
 		C15DC0D72A1B40C10053B8EA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = DarkAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = emuThreeDS/emuThreeDS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_ASSET_PATHS = "\"emuThreeDS/Preview Content\"";
 				DEVELOPMENT_TEAM = Z3ZEABYY6P;
 				ENABLE_PREVIEWS = YES;
@@ -3483,7 +3527,7 @@
 					"$(inherited)",
 					"$(PROJECT_DIR)/emuThreeDS/externals",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.0.6;
 				OTHER_LDFLAGS = (
 					"-lboost_serialization",
 					"-lboost_program_options",
@@ -3502,7 +3546,7 @@
 					"\"$(SRCROOT)/emuThreeDS/externals/source/cryptopp\"",
 					"$(HOME)/VulkanSDK/1.3.243.0/MoltenVK/include",
 				);
-				TARGETED_DEVICE_FAMILY = 1;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};

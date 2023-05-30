@@ -31,8 +31,18 @@ std::unique_ptr<Frontend::GraphicsContext> EmuWindow_VK::CreateSharedContext() c
     return std::make_unique<SharedContext_Apple>();
 }
 
+
 #include "video_core/renderer_base.h"
 #include "video_core/video_core.h"
+#include "common/settings.h"
+void EmuWindow_VK::OrientationChanged(bool portrait, CA::MetalLayer* surface) {
+    is_portrait = portrait;
+    
+    OnSurfaceChanged(surface);
+    OnFramebufferSizeChanged();
+}
+
+
 void EmuWindow_VK::DonePresenting() {
     presenting_state = PresentingState::Stopped;
 }

@@ -28,6 +28,7 @@ class EmulationManager {
     
     func run() {
         hasConfigured = true
+        wrapper.isRunning = true
         wrapper.run()
     }
     
@@ -42,5 +43,10 @@ class EmulationManager {
     
     func touchesEnded() {
         wrapper.touchesEnded()
+    }
+    
+    
+    func orientationChanged(orientation: UIDeviceOrientation, with surface: CAMetalLayer) {
+        wrapper.orientationChanged(orientation, with: surface)
     }
 }

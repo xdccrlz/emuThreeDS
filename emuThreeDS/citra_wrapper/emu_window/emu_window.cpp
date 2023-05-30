@@ -18,6 +18,7 @@ EmuWindow_Apple::EmuWindow_Apple(CA::MetalLayer* surface) : host_window{surface}
     // window width, height
     window_width = ResolutionHandle::GetScreenWidth();
     window_height = ResolutionHandle::GetScreenHeight();
+    is_portrait = false;
     
     Network::Init();
 }
@@ -28,14 +29,12 @@ EmuWindow_Apple::~EmuWindow_Apple() {
 }
 
 void EmuWindow_Apple::OnFramebufferSizeChanged() {
-    const bool is_portrait_mode{ResolutionHandle::IsPortrait()};
-
     const int bigger{window_width > window_height ? window_width : window_height};
     const int smaller{window_width < window_height ? window_width : window_height};
-    if (is_portrait_mode) {
-        UpdateCurrentFramebufferLayout(smaller, bigger, is_portrait_mode);
+    if (is_portrait) {
+        UpdateCurrentFramebufferLayout(smaller, bigger, is_portrait);
     } else {
-        UpdateCurrentFramebufferLayout(smaller, bigger, is_portrait_mode);
+        UpdateCurrentFramebufferLayout(bigger, smaller, is_portrait);
     }
 }
 

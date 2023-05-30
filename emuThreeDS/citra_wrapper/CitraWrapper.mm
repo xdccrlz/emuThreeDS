@@ -5,8 +5,9 @@
 //  Created by Antique on 22/5/2023.
 //
 
-#include <Foundation/Foundation.h>
+#import <Foundation/Foundation.h>
 #import "CitraWrapper.h"
+#import "InputFactory.h"
 
 #include "config.h"
 #include "file_handle.h"
@@ -41,6 +42,11 @@ std::unique_ptr<EmuWindow_VK> emu_window;
     return [NSString stringWithCharacters:(const unichar*)publisher.c_str() length:publisher.length()];
 }
 
+-(NSString *) GetRegion:(NSString *)path {
+    auto regions = GameInfo::GetRegions(std::string([path UTF8String]));
+    return [NSString stringWithCString:regions.c_str() encoding:NSUTF8StringEncoding];
+}
+
 -(NSString *) GetTitle:(NSString *)path {
     auto title = GameInfo::GetTitle(std::string([path UTF8String]));
     return [NSString stringWithCharacters:(const unichar*)title.c_str() length:title.length()];
@@ -55,20 +61,28 @@ std::unique_ptr<EmuWindow_VK> emu_window;
 -(void) load:(NSString *)path {
     Config{};
     
-    Settings::values.layout_option.SetValue(Settings::LayoutOption::Default);
-    Settings::values.custom_layout.SetValue(true);
-    Settings::values.custom_top_top.SetValue(0);
-    Settings::values.custom_top_left.SetValue(0);
-    Settings::values.custom_top_bottom.SetValue(ResolutionHandle::GetScreenWidth() * 0.6);
-    Settings::values.custom_top_right.SetValue(ResolutionHandle::GetScreenWidth());
+    Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"portrait_layout_option"]] unsignedIntValue]);
+    Settings::values.resolution_factor.SetValue([[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"resolution_factor"]] unsignedIntValue]);
     
-    Settings::values.custom_bottom_top.SetValue(ResolutionHandle::GetScreenWidth() * 0.6);
-    Settings::values.custom_bottom_left.SetValue(0);
-    Settings::values.custom_bottom_bottom.SetValue((ResolutionHandle::GetScreenWidth() * 0.6) + (ResolutionHandle::GetScreenWidth() * 0.75));
-    Settings::values.custom_bottom_right.SetValue(ResolutionHandle::GetScreenWidth());
+    Settings::values.use_cpu_jit.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"use_cpu_jit"]);
+    for (const auto& service_module : Service::service_module_map) {
+        Settings::values.lle_modules.emplace(service_module.name, ![[NSUserDefaults standardUserDefaults] boolForKey:@"use_hle"]);
+    }
     
-    Settings::values.resolution_factor.SetValue(2);
     
+    for (int i = 0; i < Settings::NativeButton::NumButtons; i++) {
+        Common::ParamPackage param{ { "engine", "ios_gamepad" }, { "code", std::to_string(i) } };
+        Settings::values.current_input_profile.buttons[i] = param.Serialize();
+    }
+    
+    for (int i = 0; i < Settings::NativeAnalog::NumAnalogs; i++) {
+        Common::ParamPackage param{ { "engine", "ios_gamepad" }, { "code", std::to_string(i) } };
+        Settings::values.current_input_profile.analogs[i] = param.Serialize();
+    }
+    
+    
+    Input::RegisterFactory<Input::ButtonDevice>("ios_gamepad", std::make_shared<ButtonFactory>());
+    Input::RegisterFactory<Input::AnalogDevice>("ios_gamepad", std::make_shared<AnalogFactory>());
     Settings::Apply();
     
     _thread = [[NSThread alloc] initWithTarget:self selector:@selector(start) object:NULL];
@@ -111,15 +125,27 @@ std::unique_ptr<EmuWindow_VK> emu_window;
 
 
 -(void) touchesBegan:(CGPoint)point {
-    NSLog(@"%d, %d", point.x, point.y);
-    emu_window->OnTouchEvent((point.x * [[UIScreen mainScreen] scale]) + 0.5, (point.y * [[UIScreen mainScreen] scale]) + 0.5, true);
+    emu_window->OnTouchEvent((point.x * [[UIScreen mainScreen] nativeScale]) + 0.5, (point.y * [[UIScreen mainScreen] nativeScale]) + 0.5, true);
 }
 
 -(void) touchesMoved:(CGPoint)point {
-    emu_window->OnTouchMoved((point.x * [[UIScreen mainScreen] scale]) + 0.5, (point.y * [[UIScreen mainScreen] scale]) + 0.5);
+    emu_window->OnTouchMoved((point.x * [[UIScreen mainScreen] nativeScale]) + 0.5, (point.y * [[UIScreen mainScreen] nativeScale]) + 0.5);
 }
 
 -(void) touchesEnded {
     emu_window->OnTouchReleased();
+}
+
+
+-(void) orientationChanged:(UIDeviceOrientation)orientation with:(CAMetalLayer *)surface {
+    if (_isRunning && !_isPaused) {
+        if (orientation == UIDeviceOrientationPortrait) {
+            Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"portrait_layout_option"]] unsignedIntValue]);
+        } else {
+            Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"landscape_layout_option"]] unsignedIntValue]);
+        }
+        
+        emu_window->OrientationChanged(orientation == UIDeviceOrientationPortrait, (__bridge CA::MetalLayer*)surface);
+    }
 }
 @end

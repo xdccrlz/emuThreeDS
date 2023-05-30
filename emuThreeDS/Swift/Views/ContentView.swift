@@ -5,38 +5,32 @@
 //  Created by Antique on 22/5/2023.
 //
 
-import MetalKit
 import SwiftUI
 
-class GlobalManager: ObservableObject {
-    @Published var emulationManager = EmulationManager.shared
-    @Published var libraryManager = LibraryManager.shared
-}
-
 struct ContentView: View {
-    @StateObject var globalManager = GlobalManager()
+    @StateObject var globalManager = GlobalManager.shared
+    
+    @State var selection: Int = 0
     
     var body: some View {
-        TabView {
-            LibraryView()
+        TabView(selection: $selection) {
+            LibraryView(selection: $selection)
                 .environmentObject(globalManager)
                 .tabItem {
-                    Image(systemName: "folder")
-                    Text("Library")
+                    Label("Library", systemImage: "folder")
                 }
-            
+                .tag(0)
             EmulationView()
                 .environmentObject(globalManager)
                 .tabItem {
-                    Image(systemName: "gamecontroller")
-                    Text("Emulation")
+                    Label("Emulation", systemImage: "gamecontroller")
                 }
-            
+                .tag(1)
             SettingsView()
                 .tabItem {
-                    Image(systemName: "gearshape")
-                    Text("Settings")
+                    Label("Settings", systemImage: "gearshape")
                 }
+                .tag(2)
         }
     }
 }

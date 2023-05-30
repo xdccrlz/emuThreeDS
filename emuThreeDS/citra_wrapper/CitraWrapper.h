@@ -6,7 +6,8 @@
 //
 
 #import <Foundation/Foundation.h>
-#include <MetalKit/MetalKit.h>
+#import <MetalKit/MetalKit.h>
+#import <UIKit/UIKit.h>
 
 NS_ASSUME_NONNULL_BEGIN
 @interface CitraWrapper : NSObject {
@@ -20,8 +21,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 +(CitraWrapper *) sharedInstance;
 
+
 -(uint16_t*) GetIcon:(NSString *)path;
 -(NSString *) GetPublisher:(NSString *)path;
+-(NSString *) GetRegion:(NSString *)path;
 -(NSString *) GetTitle:(NSString *)path;
 
 
@@ -35,5 +38,8 @@ NS_ASSUME_NONNULL_BEGIN
 -(void) touchesBegan:(CGPoint)point;
 -(void) touchesMoved:(CGPoint)point;
 -(void) touchesEnded;
+
+
+-(void) orientationChanged:(UIDeviceOrientation)orientation with:(CAMetalLayer *)surface;
 @end
 NS_ASSUME_NONNULL_END

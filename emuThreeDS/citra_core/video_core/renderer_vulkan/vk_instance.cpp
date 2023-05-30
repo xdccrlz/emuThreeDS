@@ -287,7 +287,7 @@ Instance::Instance(Frontend::EmuWindow& window, u32 physical_device_index)
         .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
         .pEngineName = "Citra Vulkan",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion = available_version,
+        .apiVersion = VK_API_VERSION_1_3
     };
 
     std::array<const char*, 3> layers;

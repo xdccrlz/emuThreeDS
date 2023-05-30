@@ -10,39 +10,36 @@ import SwiftUI
 struct LibraryView: View {
     @EnvironmentObject var globalManager: GlobalManager
     
+    @State var roms: [Initial : [Rom]] = [:]
+    @Binding var selection: Int
+    
     var body: some View {
         NavigationView {
-            if let library = globalManager.libraryManager.getLibrary() {
-                List(globalManager.libraryManager.initials(from: library), id: \.character) { initial in
-                    Section(initial.character) {
-                        ForEach(globalManager.libraryManager.roms(for: initial, using: library), id: \.title) { rom in
-                            RomView(rom: rom, wrapper: globalManager.libraryManager.wrapper)
-                                .onTapGesture {
-                                    globalManager.emulationManager.load(rom: rom)
-                                }
-                        }
-                    }
-                    .headerProminence(.increased)
-                }
-                .navigationTitle("Library")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button { } label: {
-                            Label("Install CIA", systemImage: "plus")
-                        }
+            List(roms.keys.sorted(), id: \.character, rowContent: { initial in
+                Section(initial.character) {
+                    ForEach(globalManager.libraryManager.roms(for: initial, using: roms), id: \.title) { rom in
+                        RomView(rom: rom, wrapper: globalManager.citraWrapper)
+                            .onTapGesture {
+                                globalManager.emulationManager.load(rom: rom)
+                                selection = 1
+                            }
                     }
                 }
-            } else {
-                Text("No Roms")
-                    .foregroundColor(.secondary)
-                .navigationTitle("Library")
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button { } label: {
-                            Label("Install CIA", systemImage: "plus")
-                        }
+                .headerProminence(.increased)
+            })
+            .navigationTitle("Library")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        
+                    } label: {
+                        Image(systemName: "plus")
                     }
+
                 }
+            }
+            .task {
+                roms = globalManager.libraryManager.getLibrary() ?? [:]
             }
         }
     }

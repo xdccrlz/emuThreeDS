@@ -10,6 +10,7 @@ import UIKit
 
 struct Rom : Codable, Hashable, Comparable {
     let publisher: String
+    let regions: String
     let size: String
     let title: String
     

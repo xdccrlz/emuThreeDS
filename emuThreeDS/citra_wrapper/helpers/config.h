@@ -11,6 +11,7 @@
 #include <string>
 
 #include "common/settings.h"
+#include "file_handle.h"
 
 class INIReader;
 

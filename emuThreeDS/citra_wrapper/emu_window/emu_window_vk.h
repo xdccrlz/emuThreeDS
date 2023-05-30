@@ -18,6 +18,8 @@ public:
     void TryPresenting() override;
     void DonePresenting() override;
     
+    void OrientationChanged(bool portrait, CA::MetalLayer* surface);
+    
     std::unique_ptr<Frontend::GraphicsContext> CreateSharedContext() const override;
     
 private:
