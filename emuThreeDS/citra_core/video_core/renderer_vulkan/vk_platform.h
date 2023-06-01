@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -15,10 +15,14 @@ enum class WindowSystemType : u8;
 
 namespace Vulkan {
 
+vk::DynamicLoader& GetVulkanLoader();
+
 std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window_type,
                                                bool enable_debug_utils);
 
 vk::InstanceCreateFlags GetInstanceFlags();
+
+void LoadInstanceFunctions(vk::Instance instance);
 
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::EmuWindow& emu_window);
 

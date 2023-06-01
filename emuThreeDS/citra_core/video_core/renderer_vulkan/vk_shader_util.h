@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -9,7 +9,7 @@
 
 namespace Vulkan {
 
-enum class ShaderOptimization { High = 0, Debug = 1 };
+enum class ShaderOptimization { Normal = 0, Debug = 1 };
 
 vk::ShaderModule Compile(std::string_view code, vk::ShaderStageFlagBits stage, vk::Device device,
                          ShaderOptimization level);

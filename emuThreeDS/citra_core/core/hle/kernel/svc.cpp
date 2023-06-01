@@ -4,14 +4,14 @@
 
 #include <algorithm>
 #include <array>
-#include <cinttypes>
-#include <map>
 #include <fmt/format.h>
 #include "common/logging/log.h"
 #include "common/microprofile.h"
+#include "common/scm_rev.h"
 #include "core/arm/arm_interface.h"
 #include "core/core.h"
 #include "core/core_timing.h"
+#include "core/gdbstub/hio.h"
 #include "core/hle/kernel/address_arbiter.h"
 #include "core/hle/kernel/client_port.h"
 #include "core/hle/kernel/client_session.h"
@@ -1139,9 +1139,21 @@ void SVC::Break(u8 break_reason) {
     system.SetStatus(Core::System::ResultStatus::ErrorUnknown);
 }
 
-/// Used to output a message on a debug hardware unit - does nothing on a retail unit
+/// Used to output a message on a debug hardware unit, or for the GDB file I/O
+/// (HIO) protocol - does nothing on a retail unit.
 void SVC::OutputDebugString(VAddr address, s32 len) {
-    if (len <= 0) {
+    if (!memory.IsValidVirtualAddress(*kernel.GetCurrentProcess(), address)) {
+        LOG_WARNING(Kernel_SVC, "OutputDebugString called with invalid address {:X}", address);
+        return;
+    }
+
+    if (len == 0) {
+        GDBStub::SetHioRequest(address);
+        return;
+    }
+
+    if (len < 0) {
+        LOG_WARNING(Kernel_SVC, "OutputDebugString called with invalid length {}", len);
         return;
     }
 
@@ -1793,41 +1805,41 @@ ResultCode SVC::GetSystemInfo(s64* out, u32 type, s32 param) {
             *out = 1;
             break;
         case SystemInfoCitraInformation::BUILD_NAME:
-            CopyStringPart(reinterpret_cast<char*>(out), "", 0, sizeof(s64));
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_build_name, 0, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_VERSION:
-            CopyStringPart(reinterpret_cast<char*>(out), "1", 0, sizeof(s64));
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_build_version, 0, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_DATE_PART1:
-            CopyStringPart(reinterpret_cast<char*>(out), "",
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_build_date,
                            (sizeof(s64) - 1) * 0, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_DATE_PART2:
-            CopyStringPart(reinterpret_cast<char*>(out), "",
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_build_date,
                            (sizeof(s64) - 1) * 1, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_DATE_PART3:
-            CopyStringPart(reinterpret_cast<char*>(out), "",
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_build_date,
                            (sizeof(s64) - 1) * 2, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_DATE_PART4:
-            CopyStringPart(reinterpret_cast<char*>(out), "",
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_build_date,
                            (sizeof(s64) - 1) * 3, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_GIT_BRANCH_PART1:
-            CopyStringPart(reinterpret_cast<char*>(out), "main",
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_scm_branch,
                            (sizeof(s64) - 1) * 0, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_GIT_BRANCH_PART2:
-            CopyStringPart(reinterpret_cast<char*>(out), "main",
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_scm_branch,
                            (sizeof(s64) - 1) * 1, sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_GIT_DESCRIPTION_PART1:
-            CopyStringPart(reinterpret_cast<char*>(out), "", (sizeof(s64) - 1) * 0,
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_scm_desc, (sizeof(s64) - 1) * 0,
                            sizeof(s64));
             break;
         case SystemInfoCitraInformation::BUILD_GIT_DESCRIPTION_PART2:
-            CopyStringPart(reinterpret_cast<char*>(out), "", (sizeof(s64) - 1) * 1,
+            CopyStringPart(reinterpret_cast<char*>(out), Common::g_scm_desc, (sizeof(s64) - 1) * 1,
                            sizeof(s64));
             break;
         default:
@@ -1948,7 +1960,7 @@ ResultCode SVC::GetProcessList(s32* process_count, VAddr out_process_array,
     }
 
     s32 written = 0;
-    for (const auto process : kernel.GetProcessList()) {
+    for (const auto& process : kernel.GetProcessList()) {
         if (written >= out_process_array_count) {
             break;
         }

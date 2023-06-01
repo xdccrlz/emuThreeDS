@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -227,7 +227,6 @@ inline vk::PrimitiveTopology PrimitiveTopology(Pica::PipelineRegs::TriangleTopol
 inline vk::CullModeFlags CullMode(Pica::RasterizerRegs::CullMode mode) {
     switch (mode) {
     case Pica::RasterizerRegs::CullMode::KeepAll:
-    case Pica::RasterizerRegs::CullMode::KeepAll2:
         return vk::CullModeFlagBits::eNone;
     case Pica::RasterizerRegs::CullMode::KeepClockWise:
     case Pica::RasterizerRegs::CullMode::KeepCounterClockWise:
@@ -238,7 +237,6 @@ inline vk::CullModeFlags CullMode(Pica::RasterizerRegs::CullMode mode) {
 inline vk::FrontFace FrontFace(Pica::RasterizerRegs::CullMode mode) {
     switch (mode) {
     case Pica::RasterizerRegs::CullMode::KeepAll:
-    case Pica::RasterizerRegs::CullMode::KeepAll2:
     case Pica::RasterizerRegs::CullMode::KeepClockWise:
         return vk::FrontFace::eCounterClockwise;
     case Pica::RasterizerRegs::CullMode::KeepCounterClockWise:

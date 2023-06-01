@@ -1,32 +1,25 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/gtc/matrix_transform.hpp>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/microprofile.h"
 #include "common/settings.h"
 #include "core/core.h"
-#include "core/frontend/framebuffer_layout.h"
+#include "core/frontend/emu_window.h"
 #include "core/hw/gpu.h"
 #include "core/hw/hw.h"
 #include "core/hw/lcd.h"
-#include "core/tracer/recorder.h"
-#include "video_core/debug_utils/debug_utils.h"
 #include "video_core/renderer_vulkan/renderer_vulkan.h"
-#include "video_core/renderer_vulkan/vk_platform.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
-#include "video_core/renderer_vulkan/vk_texture_mailbox.h"
-#include "video_core/video_core.h"
 
 #include "video_core/host_shaders/vulkan_present_anaglyph_frag_spv.h"
 #include "video_core/host_shaders/vulkan_present_frag_spv.h"
 #include "video_core/host_shaders/vulkan_present_interlaced_frag_spv.h"
 #include "video_core/host_shaders/vulkan_present_vert_spv.h"
 
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 
 MICROPROFILE_DEFINE(Vulkan_RenderFrame, "Vulkan", "Render Frame", MP_RGB(128, 128, 64));
 
@@ -48,14 +41,15 @@ constexpr u32 VERTEX_BUFFER_SIZE = sizeof(ScreenRectVertex) * 8192;
 
 constexpr std::array<f32, 4 * 4> MakeOrthographicMatrix(f32 width, f32 height) {
     // clang-format off
-    return { 2.f / width, 0.f,          0.f, 0.f,
-             0.f,         2.f / height, 0.f, 0.f,
-             0.f,         0.f,          1.f, 0.f,
-            -1.f,        -1.f,          0.f, 1.f};
+    return { 2.f / width, 0.f,          0.f, -1.f,
+             0.f,         2.f / height, 0.f, -1.f,
+             0.f,         0.f,          1.f,  0.f,
+             0.f,         0.f,          0.f,  1.f};
     // clang-format on
 }
 
 namespace {
+
 std::string GetReadableVersion(u32 version) {
     return fmt::format("{}.{}.{}", VK_VERSION_MAJOR(version), VK_VERSION_MINOR(version),
                        VK_VERSION_PATCH(version));
@@ -80,49 +74,36 @@ std::string GetDriverVersion(const Instance& instance) {
     return GetReadableVersion(version);
 }
 
-std::string BuildCommaSeparatedExtensions(std::vector<std::string> available_extensions) {
-    std::sort(available_extensions.begin(), available_extensions.end());
-
-    static constexpr std::size_t AverageExtensionSize = 64;
-    std::string separated_extensions;
-    separated_extensions.reserve(available_extensions.size() * AverageExtensionSize);
-
-    const auto end = std::end(available_extensions);
-    for (auto extension = std::begin(available_extensions); extension != end; ++extension) {
-        if (const bool is_last = extension + 1 == end; is_last) {
-            separated_extensions += *extension;
-        } else {
-            separated_extensions += fmt::format("{},", *extension);
-        }
-    }
-    return separated_extensions;
-}
-
 } // Anonymous namespace
 
-RendererVulkan::RendererVulkan(Core::System& system_, Frontend::EmuWindow& window,
+RendererVulkan::RendererVulkan(Core::System& system, Frontend::EmuWindow& window,
                                Frontend::EmuWindow* secondary_window)
-    : RendererBase{window, secondary_window}, system{system_}, memory{system.Memory()},
+    : RendererBase{system, window, secondary_window}, memory{system.Memory()},
       telemetry_session{system.TelemetrySession()},
-      instance{window, Settings::values.physical_device.GetValue()}, scheduler{instance,
-                                                                               renderpass_cache},
-      renderpass_cache{instance, scheduler}, desc_manager{instance, scheduler},
-      runtime{instance, scheduler, renderpass_cache, desc_manager}, swapchain{instance, scheduler,
-                                                                              renderpass_cache},
+      instance{window, Settings::values.physical_device.GetValue()},
+      scheduler{instance, renderpass_cache}, renderpass_cache{instance, scheduler},
+      desc_manager{instance, scheduler}, runtime{instance, scheduler, renderpass_cache,
+                                                 desc_manager},
       vertex_buffer{instance, scheduler, vk::BufferUsageFlagBits::eVertexBuffer,
                     VERTEX_BUFFER_SIZE},
-      rasterizer{
-          memory,  system.CustomTexManager(), render_window, instance, scheduler, desc_manager,
-          runtime, renderpass_cache} {
-    Report();
+      rasterizer{memory,          system.CustomTexManager(),
+                 *this,           render_window,
+                 instance,        scheduler,
+                 desc_manager,    runtime,
+                 renderpass_cache},
+      main_window{window, instance, scheduler} {
+    ReportDriver();
     CompileShaders();
     BuildLayouts();
     BuildPipelines();
-    mailbox = std::make_unique<PresentMailbox>(instance, swapchain, scheduler, renderpass_cache);
+    if (secondary_window) {
+        second_window = std::make_unique<PresentWindow>(*secondary_window, instance, scheduler);
+    }
 }
 
 RendererVulkan::~RendererVulkan() {
     vk::Device device = instance.GetDevice();
+    scheduler.Finish();
     device.waitIdle();
 
     device.destroyPipelineLayout(present_pipeline_layout);
@@ -143,8 +124,6 @@ RendererVulkan::~RendererVulkan() {
         device.destroyImageView(info.texture.image_view);
         vmaDestroyImage(instance.GetAllocator(), info.texture.image, info.texture.allocation);
     }
-
-    mailbox.reset();
 }
 
 void RendererVulkan::Sync() {
@@ -186,17 +165,31 @@ void RendererVulkan::PrepareRendertarget() {
     }
 }
 
-void RendererVulkan::RenderToMailbox(const Layout::FramebufferLayout& layout,
-                                     std::unique_ptr<PresentMailbox>& mailbox, bool flipped) {
-    Frame* frame = mailbox->GetRenderFrame();
-    MICROPROFILE_SCOPE(Vulkan_RenderFrame);
+void RendererVulkan::RenderToWindow(PresentWindow& window, const Layout::FramebufferLayout& layout,
+                                    bool flipped) {
+    Frame* frame = window.GetRenderFrame();
 
-    const auto [width, height] = swapchain.GetExtent();
-    if (width != frame->width || height != frame->height) {
-        mailbox->ReloadFrame(frame, width, height);
+    if (layout.width != frame->width || layout.height != frame->height) {
+        window.WaitPresent();
+        scheduler.Finish();
+        window.RecreateFrame(frame, layout.width, layout.height);
     }
 
-    scheduler.Record([layout](vk::CommandBuffer cmdbuf) {
+    for (std::size_t i = 0; i < screen_infos.size(); i++) {
+        present_textures[i] = vk::DescriptorImageInfo{
+            .sampler = present_samplers[current_sampler],
+            .imageView = screen_infos[i].image_view,
+            .imageLayout = vk::ImageLayout::eGeneral,
+        };
+    }
+
+    const vk::Device device = instance.GetDevice();
+    vk::DescriptorSet set = desc_manager.AllocateSet(present_descriptor_layout);
+    device.updateDescriptorSetWithTemplate(set, present_update_template, present_textures[0]);
+
+    renderpass_cache.EndRendering();
+    scheduler.Record([this, layout, frame, set, renderpass = window.Renderpass(),
+                      index = current_pipeline](vk::CommandBuffer cmdbuf) {
         const vk::Viewport viewport = {
             .x = 0.0f,
             .y = 0.0f,
@@ -213,70 +206,51 @@ void RendererVulkan::RenderToMailbox(const Layout::FramebufferLayout& layout,
 
         cmdbuf.setViewport(0, viewport);
         cmdbuf.setScissor(0, scissor);
-    });
 
-    DrawScreens(frame, layout, flipped);
-
-    scheduler.Flush(frame->render_ready);
-    scheduler.Record([&mailbox, frame](vk::CommandBuffer) { mailbox->Present(frame); });
-    scheduler.DispatchWork();
-}
-
-void RendererVulkan::BeginRendering(Frame* frame) {
-    for (std::size_t i = 0; i < screen_infos.size(); i++) {
-        const auto& info = screen_infos[i];
-        present_textures[i] = vk::DescriptorImageInfo{
-            .sampler = present_samplers[current_sampler],
-            .imageView = info.image_view,
-            .imageLayout = vk::ImageLayout::eGeneral,
-        };
-    }
-
-    vk::DescriptorSet set = desc_manager.AllocateSet(present_descriptor_layout);
-    instance.GetDevice().updateDescriptorSetWithTemplate(set, present_update_template,
-                                                         present_textures[0]);
-
-    renderpass_cache.EndRendering();
-    scheduler.Record([this, framebuffer = frame->framebuffer, width = frame->width,
-                      height = frame->height, set,
-                      pipeline_index = current_pipeline](vk::CommandBuffer cmdbuf) {
         const vk::ClearValue clear{.color = clear_color};
+        const vk::PipelineLayout layout{present_pipeline_layout};
+        const vk::Pipeline pipeline{present_pipelines[index]};
         const vk::RenderPassBeginInfo renderpass_begin_info = {
-            .renderPass = renderpass_cache.GetPresentRenderpass(),
-            .framebuffer = framebuffer,
+            .renderPass = renderpass,
+            .framebuffer = frame->framebuffer,
             .renderArea =
                 vk::Rect2D{
                     .offset = {0, 0},
-                    .extent = {width, height},
+                    .extent = {frame->width, frame->height},
                 },
             .clearValueCount = 1,
             .pClearValues = &clear,
         };
 
         cmdbuf.beginRenderPass(renderpass_begin_info, vk::SubpassContents::eInline);
-        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, present_pipelines[pipeline_index]);
-        cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, present_pipeline_layout, 0, set,
-                                  {});
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+        cmdbuf.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, set, {});
     });
+
+    DrawScreens(frame, layout, flipped);
+    scheduler.Flush(frame->render_ready);
+
+    window.Present(frame);
 }
 
 void RendererVulkan::LoadFBToScreenInfo(const GPU::Regs::FramebufferConfig& framebuffer,
                                         ScreenInfo& screen_info, bool right_eye) {
 
-    if (framebuffer.address_right1 == 0 || framebuffer.address_right2 == 0)
+    if (framebuffer.address_right1 == 0 || framebuffer.address_right2 == 0) {
         right_eye = false;
+    }
 
     const PAddr framebuffer_addr =
         framebuffer.active_fb == 0
-            ? (!right_eye ? framebuffer.address_left1 : framebuffer.address_right1)
-            : (!right_eye ? framebuffer.address_left2 : framebuffer.address_right2);
+            ? (right_eye ? framebuffer.address_right1 : framebuffer.address_left1)
+            : (right_eye ? framebuffer.address_right2 : framebuffer.address_left2);
 
     LOG_TRACE(Render_Vulkan, "0x{:08x} bytes from 0x{:08x}({}x{}), fmt {:x}",
               framebuffer.stride * framebuffer.height, framebuffer_addr, framebuffer.width.Value(),
               framebuffer.height.Value(), framebuffer.format);
 
-    int bpp = GPU::Regs::BytesPerPixel(framebuffer.color_format);
-    std::size_t pixel_stride = framebuffer.stride / bpp;
+    const int bpp = GPU::Regs::BytesPerPixel(framebuffer.color_format);
+    const std::size_t pixel_stride = framebuffer.stride / bpp;
 
     ASSERT(pixel_stride * bpp == framebuffer.stride);
     ASSERT(pixel_stride % 4 == 0);
@@ -481,17 +455,13 @@ void RendererVulkan::BuildPipelines() {
             .pColorBlendState = &color_blending,
             .pDynamicState = &dynamic_info,
             .layout = present_pipeline_layout,
-            .renderPass = renderpass_cache.GetPresentRenderpass(),
+            .renderPass = main_window.Renderpass(),
         };
 
-        vk::Device device = instance.GetDevice();
-        if (const auto result = device.createGraphicsPipeline({}, pipeline_info);
-            result.result == vk::Result::eSuccess) {
-            present_pipelines[i] = result.value;
-        } else {
-            LOG_CRITICAL(Render_Vulkan, "Unable to build present pipelines");
-            UNREACHABLE();
-        }
+        const auto [result, pipeline] =
+            instance.GetDevice().createGraphicsPipeline({}, pipeline_info);
+        ASSERT_MSG(result == vk::Result::eSuccess, "Unable to build present pipelines");
+        present_pipelines[i] = pipeline;
     }
 }
 
@@ -634,110 +604,65 @@ void RendererVulkan::ReloadPipeline() {
     }
 }
 
-void RendererVulkan::DrawSingleScreenRotated(u32 screen_id, float x, float y, float w, float h) {
-    auto& screen_info = screen_infos[screen_id];
+void RendererVulkan::DrawSingleScreen(u32 screen_id, float x, float y, float w, float h,
+                                      Layout::DisplayOrientation orientation) {
+    const ScreenInfo& screen_info = screen_infos[screen_id];
     const auto& texcoords = screen_info.texcoords;
 
-    u32 size = sizeof(ScreenRectVertex) * 4;
-    auto [ptr, offset, invalidate] = vertex_buffer.Map(size, 16);
+    std::array<ScreenRectVertex, 4> vertices;
+    switch (orientation) {
+    case Layout::DisplayOrientation::Landscape:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.bottom, texcoords.left),
+            ScreenRectVertex(x + w, y, texcoords.bottom, texcoords.right),
+            ScreenRectVertex(x, y + h, texcoords.top, texcoords.left),
+            ScreenRectVertex(x + w, y + h, texcoords.top, texcoords.right),
+        }};
+        break;
+    case Layout::DisplayOrientation::Portrait:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.bottom, texcoords.right),
+            ScreenRectVertex(x + w, y, texcoords.top, texcoords.right),
+            ScreenRectVertex(x, y + h, texcoords.bottom, texcoords.left),
+            ScreenRectVertex(x + w, y + h, texcoords.top, texcoords.left),
+        }};
+        std::swap(h, w);
+        break;
+    case Layout::DisplayOrientation::LandscapeFlipped:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.top, texcoords.right),
+            ScreenRectVertex(x + w, y, texcoords.top, texcoords.left),
+            ScreenRectVertex(x, y + h, texcoords.bottom, texcoords.right),
+            ScreenRectVertex(x + w, y + h, texcoords.bottom, texcoords.left),
+        }};
+        break;
+    case Layout::DisplayOrientation::PortraitFlipped:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.top, texcoords.left),
+            ScreenRectVertex(x + w, y, texcoords.bottom, texcoords.left),
+            ScreenRectVertex(x, y + h, texcoords.top, texcoords.right),
+            ScreenRectVertex(x + w, y + h, texcoords.bottom, texcoords.right),
+        }};
+        std::swap(h, w);
+        break;
+    default:
+        LOG_ERROR(Render_Vulkan, "Unknown DisplayOrientation: {}", orientation);
+        break;
+    }
 
-    const std::array vertices = {
-        ScreenRectVertex{x, y, texcoords.bottom, texcoords.left},
-        ScreenRectVertex{x + w, y, texcoords.bottom, texcoords.right},
-        ScreenRectVertex{x, y + h, texcoords.top, texcoords.left},
-        ScreenRectVertex{x + w, y + h, texcoords.top, texcoords.right},
-    };
-
-    std::memcpy(ptr, vertices.data(), size);
+    const u64 size = sizeof(ScreenRectVertex) * vertices.size();
+    auto [data, offset, invalidate] = vertex_buffer.Map(size, 16);
+    std::memcpy(data, vertices.data(), size);
     vertex_buffer.Commit(size);
 
-    // As this is the "DrawSingleScreenRotated" function, the output resolution dimensions have been
-    // swapped. If a non-rotated draw-screen function were to be added for book-mode games, those
-    // should probably be set to the standard (w, h, 1.0 / w, 1.0 / h) ordering.
-    const u16 scale_factor = VideoCore::GetResolutionScaleFactor();
-    const float width = static_cast<float>(screen_info.texture.width);
-    const float height = static_cast<float>(screen_info.texture.height);
-
+    const u32 scale_factor = GetResolutionScaleFactor();
     draw_info.i_resolution =
-        Common::Vec4f{width * scale_factor, height * scale_factor, 1.0f / (width * scale_factor),
-                      1.0f / (height * scale_factor)};
-    draw_info.o_resolution = Common::Vec4f{h, w, 1.0f / h, 1.0f / w};
+        Common::MakeVec(static_cast<f32>(screen_info.texture.width * scale_factor),
+                        static_cast<f32>(screen_info.texture.height * scale_factor),
+                        1.0f / static_cast<f32>(screen_info.texture.width * scale_factor),
+                        1.0f / static_cast<f32>(screen_info.texture.height * scale_factor));
+    draw_info.o_resolution = Common::MakeVec(h, w, 1.0f / h, 1.0f / w);
     draw_info.screen_id_l = screen_id;
-
-    scheduler.Record([this, offset = offset, info = draw_info](vk::CommandBuffer cmdbuf) {
-        cmdbuf.pushConstants(present_pipeline_layout,
-                             vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
-                             0, sizeof(info), &info);
-
-        cmdbuf.bindVertexBuffers(0, vertex_buffer.Handle(), {0});
-        cmdbuf.draw(4, 1, offset / sizeof(ScreenRectVertex), 0);
-    });
-}
-
-void RendererVulkan::DrawSingleScreen(u32 screen_id, float x, float y, float w, float h) {
-    auto& screen_info = screen_infos[screen_id];
-    const auto& texcoords = screen_info.texcoords;
-
-    u32 size = sizeof(ScreenRectVertex) * 4;
-    auto [ptr, offset, invalidate] = vertex_buffer.Map(size, 16);
-
-    const std::array vertices = {
-        ScreenRectVertex{x, y, texcoords.bottom, texcoords.right},
-        ScreenRectVertex{x + w, y, texcoords.top, texcoords.right},
-        ScreenRectVertex{x, y + h, texcoords.bottom, texcoords.left},
-        ScreenRectVertex{x + w, y + h, texcoords.top, texcoords.left},
-    };
-
-    std::memcpy(ptr, vertices.data(), size);
-    vertex_buffer.Commit(size);
-
-    const u16 scale_factor = VideoCore::GetResolutionScaleFactor();
-    const float width = static_cast<float>(screen_info.texture.width);
-    const float height = static_cast<float>(screen_info.texture.height);
-
-    draw_info.i_resolution =
-        Common::Vec4f{width * scale_factor, height * scale_factor, 1.0f / (width * scale_factor),
-                      1.0f / (height * scale_factor)};
-    draw_info.o_resolution = Common::Vec4f{w, h, 1.0f / h, 1.0f / w};
-    draw_info.screen_id_l = screen_id;
-
-    scheduler.Record([this, offset = offset, info = draw_info](vk::CommandBuffer cmdbuf) {
-        cmdbuf.pushConstants(present_pipeline_layout,
-                             vk::ShaderStageFlagBits::eFragment | vk::ShaderStageFlagBits::eVertex,
-                             0, sizeof(info), &info);
-
-        cmdbuf.bindVertexBuffers(0, vertex_buffer.Handle(), {0});
-        cmdbuf.draw(4, 1, offset / sizeof(ScreenRectVertex), 0);
-    });
-}
-
-void RendererVulkan::DrawSingleScreenStereoRotated(u32 screen_id_l, u32 screen_id_r, float x,
-                                                   float y, float w, float h) {
-    const ScreenInfo& screen_info_l = screen_infos[screen_id_l];
-    const auto& texcoords = screen_info_l.texcoords;
-
-    u32 size = sizeof(ScreenRectVertex) * 4;
-    auto [ptr, offset, invalidate] = vertex_buffer.Map(size, 16);
-
-    const std::array vertices = {ScreenRectVertex{x, y, texcoords.bottom, texcoords.left},
-                                 ScreenRectVertex{x + w, y, texcoords.bottom, texcoords.right},
-                                 ScreenRectVertex{x, y + h, texcoords.top, texcoords.left},
-                                 ScreenRectVertex{x + w, y + h, texcoords.top, texcoords.right}};
-
-    std::memcpy(ptr, vertices.data(), size);
-    vertex_buffer.Commit(size);
-
-    const u16 scale_factor = VideoCore::GetResolutionScaleFactor();
-    const float width = static_cast<float>(screen_info_l.texture.width);
-    const float height = static_cast<float>(screen_info_l.texture.height);
-
-    draw_info.i_resolution =
-        Common::Vec4f{width * scale_factor, height * scale_factor, 1.0f / (width * scale_factor),
-                      1.0f / (height * scale_factor)};
-
-    draw_info.o_resolution = Common::Vec4f{h, w, 1.0f / h, 1.0f / w};
-    draw_info.screen_id_l = screen_id_l;
-    draw_info.screen_id_r = screen_id_r;
 
     scheduler.Record([this, offset = offset, info = draw_info](vk::CommandBuffer cmdbuf) {
         cmdbuf.pushConstants(present_pipeline_layout,
@@ -750,32 +675,64 @@ void RendererVulkan::DrawSingleScreenStereoRotated(u32 screen_id_l, u32 screen_i
 }
 
 void RendererVulkan::DrawSingleScreenStereo(u32 screen_id_l, u32 screen_id_r, float x, float y,
-                                            float w, float h) {
+                                            float w, float h,
+                                            Layout::DisplayOrientation orientation) {
     const ScreenInfo& screen_info_l = screen_infos[screen_id_l];
     const auto& texcoords = screen_info_l.texcoords;
 
-    u32 size = sizeof(ScreenRectVertex) * 4;
-    auto [ptr, offset, invalidate] = vertex_buffer.Map(size, 16);
+    std::array<ScreenRectVertex, 4> vertices;
+    switch (orientation) {
+    case Layout::DisplayOrientation::Landscape:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.bottom, texcoords.left),
+            ScreenRectVertex(x + w, y, texcoords.bottom, texcoords.right),
+            ScreenRectVertex(x, y + h, texcoords.top, texcoords.left),
+            ScreenRectVertex(x + w, y + h, texcoords.top, texcoords.right),
+        }};
+        break;
+    case Layout::DisplayOrientation::Portrait:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.bottom, texcoords.right),
+            ScreenRectVertex(x + w, y, texcoords.top, texcoords.right),
+            ScreenRectVertex(x, y + h, texcoords.bottom, texcoords.left),
+            ScreenRectVertex(x + w, y + h, texcoords.top, texcoords.left),
+        }};
+        std::swap(h, w);
+        break;
+    case Layout::DisplayOrientation::LandscapeFlipped:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.top, texcoords.right),
+            ScreenRectVertex(x + w, y, texcoords.top, texcoords.left),
+            ScreenRectVertex(x, y + h, texcoords.bottom, texcoords.right),
+            ScreenRectVertex(x + w, y + h, texcoords.bottom, texcoords.left),
+        }};
+        break;
+    case Layout::DisplayOrientation::PortraitFlipped:
+        vertices = {{
+            ScreenRectVertex(x, y, texcoords.top, texcoords.left),
+            ScreenRectVertex(x + w, y, texcoords.bottom, texcoords.left),
+            ScreenRectVertex(x, y + h, texcoords.top, texcoords.right),
+            ScreenRectVertex(x + w, y + h, texcoords.bottom, texcoords.right),
+        }};
+        std::swap(h, w);
+        break;
+    default:
+        LOG_ERROR(Render_Vulkan, "Unknown DisplayOrientation: {}", orientation);
+        break;
+    }
 
-    const std::array<ScreenRectVertex, 4> vertices = {{
-        ScreenRectVertex(x, y, texcoords.bottom, texcoords.right),
-        ScreenRectVertex(x + w, y, texcoords.top, texcoords.right),
-        ScreenRectVertex(x, y + h, texcoords.bottom, texcoords.left),
-        ScreenRectVertex(x + w, y + h, texcoords.top, texcoords.left),
-    }};
-
-    std::memcpy(ptr, vertices.data(), size);
+    const u64 size = sizeof(ScreenRectVertex) * vertices.size();
+    auto [data, offset, invalidate] = vertex_buffer.Map(size, 16);
+    std::memcpy(data, vertices.data(), size);
     vertex_buffer.Commit(size);
 
-    const u16 scale_factor = VideoCore::GetResolutionScaleFactor();
-    const float width = static_cast<float>(screen_info_l.texture.width);
-    const float height = static_cast<float>(screen_info_l.texture.height);
-
+    const u32 scale_factor = GetResolutionScaleFactor();
     draw_info.i_resolution =
-        Common::Vec4f{width * scale_factor, height * scale_factor, 1.0f / (width * scale_factor),
-                      1.0f / (height * scale_factor)};
-
-    draw_info.o_resolution = Common::Vec4f{w, h, 1.0f / w, 1.0f / h};
+        Common::MakeVec(static_cast<f32>(screen_info_l.texture.width * scale_factor),
+                        static_cast<f32>(screen_info_l.texture.height * scale_factor),
+                        1.0f / static_cast<f32>(screen_info_l.texture.width * scale_factor),
+                        1.0f / static_cast<f32>(screen_info_l.texture.height * scale_factor));
+    draw_info.o_resolution = Common::MakeVec(h, w, 1.0f / h, 1.0f / w);
     draw_info.screen_id_l = screen_id_l;
     draw_info.screen_id_r = screen_id_r;
 
@@ -787,6 +744,101 @@ void RendererVulkan::DrawSingleScreenStereo(u32 screen_id_l, u32 screen_id_r, fl
         cmdbuf.bindVertexBuffers(0, vertex_buffer.Handle(), {0});
         cmdbuf.draw(4, 1, offset / sizeof(ScreenRectVertex), 0);
     });
+}
+
+void RendererVulkan::DrawTopScreen(const Layout::FramebufferLayout& layout,
+                                   const Common::Rectangle<u32>& top_screen) {
+    if (!layout.top_screen_enabled) {
+        return;
+    }
+
+    const float top_screen_left = static_cast<float>(top_screen.left);
+    const float top_screen_top = static_cast<float>(top_screen.top);
+    const float top_screen_width = static_cast<float>(top_screen.GetWidth());
+    const float top_screen_height = static_cast<float>(top_screen.GetHeight());
+
+    const auto orientation = layout.is_rotated ? Layout::DisplayOrientation::Landscape
+                                               : Layout::DisplayOrientation::Portrait;
+    switch (Settings::values.render_3d.GetValue()) {
+    case Settings::StereoRenderOption::Off: {
+        const int eye = static_cast<int>(Settings::values.mono_render_option.GetValue());
+        DrawSingleScreen(eye, top_screen_left, top_screen_top, top_screen_width, top_screen_height,
+                         orientation);
+        break;
+    }
+    case Settings::StereoRenderOption::SideBySide: {
+        DrawSingleScreen(0, top_screen_left / 2, top_screen_top, top_screen_width / 2,
+                         top_screen_height, orientation);
+        draw_info.layer = 1;
+        DrawSingleScreen(1, static_cast<float>((top_screen_left / 2) + (layout.width / 2)),
+                         top_screen_top, top_screen_width / 2, top_screen_height, orientation);
+        break;
+    }
+    case Settings::StereoRenderOption::CardboardVR: {
+        DrawSingleScreen(0, top_screen_left, top_screen_top, top_screen_width, top_screen_height,
+                         orientation);
+        draw_info.layer = 1;
+        DrawSingleScreen(
+            1, static_cast<float>(layout.cardboard.top_screen_right_eye + (layout.width / 2)),
+            top_screen_top, top_screen_width, top_screen_height, orientation);
+        break;
+    }
+    case Settings::StereoRenderOption::Anaglyph:
+    case Settings::StereoRenderOption::Interlaced:
+    case Settings::StereoRenderOption::ReverseInterlaced: {
+        DrawSingleScreenStereo(0, 1, top_screen_left, top_screen_top, top_screen_width,
+                               top_screen_height, orientation);
+        break;
+    }
+    }
+}
+
+void RendererVulkan::DrawBottomScreen(const Layout::FramebufferLayout& layout,
+                                      const Common::Rectangle<u32>& bottom_screen) {
+    if (!layout.bottom_screen_enabled) {
+        return;
+    }
+
+    const float bottom_screen_left = static_cast<float>(bottom_screen.left);
+    const float bottom_screen_top = static_cast<float>(bottom_screen.top);
+    const float bottom_screen_width = static_cast<float>(bottom_screen.GetWidth());
+    const float bottom_screen_height = static_cast<float>(bottom_screen.GetHeight());
+
+    const auto orientation = layout.is_rotated ? Layout::DisplayOrientation::Landscape
+                                               : Layout::DisplayOrientation::Portrait;
+
+    switch (Settings::values.render_3d.GetValue()) {
+    case Settings::StereoRenderOption::Off: {
+        DrawSingleScreen(2, bottom_screen_left, bottom_screen_top, bottom_screen_width,
+                         bottom_screen_height, orientation);
+        break;
+    }
+    case Settings::StereoRenderOption::SideBySide: {
+        DrawSingleScreen(2, bottom_screen_left / 2, bottom_screen_top, bottom_screen_width / 2,
+                         bottom_screen_height, orientation);
+        draw_info.layer = 1;
+        DrawSingleScreen(2, static_cast<float>((bottom_screen_left / 2) + (layout.width / 2)),
+                         bottom_screen_top, bottom_screen_width / 2, bottom_screen_height,
+                         orientation);
+        break;
+    }
+    case Settings::StereoRenderOption::CardboardVR: {
+        DrawSingleScreen(2, bottom_screen_left, bottom_screen_top, bottom_screen_width,
+                         bottom_screen_height, orientation);
+        draw_info.layer = 1;
+        DrawSingleScreen(
+            2, static_cast<float>(layout.cardboard.bottom_screen_right_eye + (layout.width / 2)),
+            bottom_screen_top, bottom_screen_width, bottom_screen_height, orientation);
+        break;
+    }
+    case Settings::StereoRenderOption::Anaglyph:
+    case Settings::StereoRenderOption::Interlaced:
+    case Settings::StereoRenderOption::ReverseInterlaced: {
+        DrawSingleScreenStereo(2, 2, bottom_screen_left, bottom_screen_top, bottom_screen_width,
+                               bottom_screen_height, orientation);
+        break;
+    }
+    }
 }
 
 void RendererVulkan::DrawScreens(Frame* frame, const Layout::FramebufferLayout& layout,
@@ -805,134 +857,17 @@ void RendererVulkan::DrawScreens(Frame* frame, const Layout::FramebufferLayout& 
 
     const auto& top_screen = layout.top_screen;
     const auto& bottom_screen = layout.bottom_screen;
-
-    // Set projection matrix
-    // draw_info.modelview =
-    //    MakeOrthographicMatrix(static_cast<float>(layout.width),
-    //    static_cast<float>(layout.height), flipped);
-    draw_info.modelview = glm::transpose(glm::ortho(
-        0.f, static_cast<float>(layout.width), static_cast<float>(layout.height), 0.0f, 0.f, 1.f));
-
-    const Settings::StereoRenderOption render_3d = Settings::values.render_3d.GetValue();
-    const bool stereo_single_screen = render_3d == Settings::StereoRenderOption::Anaglyph ||
-                                      render_3d == Settings::StereoRenderOption::Interlaced ||
-                                      render_3d == Settings::StereoRenderOption::ReverseInterlaced;
-
-    // Bind necessary state before drawing the screens
-    BeginRendering(frame);
+    draw_info.modelview = MakeOrthographicMatrix(layout.width, layout.height);
 
     draw_info.layer = 0;
-    if (layout.top_screen_enabled) {
-        if (layout.is_rotated) {
-            if (render_3d == Settings::StereoRenderOption::Off) {
-                int eye = static_cast<int>(Settings::values.mono_render_option.GetValue());
-                DrawSingleScreenRotated(eye, top_screen.left, top_screen.top, top_screen.GetWidth(),
-                                        top_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::SideBySide) {
-                DrawSingleScreenRotated(0, (float)top_screen.left / 2, (float)top_screen.top,
-                                        (float)top_screen.GetWidth() / 2,
-                                        (float)top_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreenRotated(1, ((float)top_screen.left / 2) + ((float)layout.width / 2),
-                                        (float)top_screen.top, (float)top_screen.GetWidth() / 2,
-                                        (float)top_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::CardboardVR) {
-                DrawSingleScreenRotated(0, layout.top_screen.left, layout.top_screen.top,
-                                        layout.top_screen.GetWidth(),
-                                        layout.top_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreenRotated(
-                    1, layout.cardboard.top_screen_right_eye + ((float)layout.width / 2),
-                    layout.top_screen.top, layout.top_screen.GetWidth(),
-                    layout.top_screen.GetHeight());
-            } else if (stereo_single_screen) {
-                DrawSingleScreenStereoRotated(0, 1, (float)top_screen.left, (float)top_screen.top,
-                                              (float)top_screen.GetWidth(),
-                                              (float)top_screen.GetHeight());
-            }
-        } else {
-            if (render_3d == Settings::StereoRenderOption::Off) {
-                int eye = static_cast<int>(Settings::values.mono_render_option.GetValue());
-                DrawSingleScreen(eye, (float)top_screen.left, (float)top_screen.top,
-                                 (float)top_screen.GetWidth(), (float)top_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::SideBySide) {
-                DrawSingleScreen(0, (float)top_screen.left / 2, (float)top_screen.top,
-                                 (float)top_screen.GetWidth() / 2, (float)top_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreen(1, ((float)top_screen.left / 2) + ((float)layout.width / 2),
-                                 (float)top_screen.top, (float)top_screen.GetWidth() / 2,
-                                 (float)top_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::CardboardVR) {
-                DrawSingleScreen(0, layout.top_screen.left, layout.top_screen.top,
-                                 layout.top_screen.GetWidth(), layout.top_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreen(1,
-                                 layout.cardboard.top_screen_right_eye + ((float)layout.width / 2),
-                                 layout.top_screen.top, layout.top_screen.GetWidth(),
-                                 layout.top_screen.GetHeight());
-            } else if (stereo_single_screen) {
-                DrawSingleScreenStereo(0, 1, (float)top_screen.left, (float)top_screen.top,
-                                       (float)top_screen.GetWidth(), (float)top_screen.GetHeight());
-            }
-        }
-    }
-
-    draw_info.layer = 0;
-    if (layout.bottom_screen_enabled) {
-        if (layout.is_rotated) {
-            if (render_3d == Settings::StereoRenderOption::Off) {
-                DrawSingleScreenRotated(2, (float)bottom_screen.left, (float)bottom_screen.top,
-                                        (float)bottom_screen.GetWidth(),
-                                        (float)bottom_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::SideBySide) {
-                DrawSingleScreenRotated(2, (float)bottom_screen.left / 2, (float)bottom_screen.top,
-                                        (float)bottom_screen.GetWidth() / 2,
-                                        (float)bottom_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreenRotated(
-                    2, ((float)bottom_screen.left / 2) + ((float)layout.width / 2),
-                    (float)bottom_screen.top, (float)bottom_screen.GetWidth() / 2,
-                    (float)bottom_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::CardboardVR) {
-                DrawSingleScreenRotated(2, layout.bottom_screen.left, layout.bottom_screen.top,
-                                        layout.bottom_screen.GetWidth(),
-                                        layout.bottom_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreenRotated(
-                    2, layout.cardboard.bottom_screen_right_eye + ((float)layout.width / 2),
-                    layout.bottom_screen.top, layout.bottom_screen.GetWidth(),
-                    layout.bottom_screen.GetHeight());
-            } else if (stereo_single_screen) {
-                DrawSingleScreenStereoRotated(
-                    2, 2, (float)bottom_screen.left, (float)bottom_screen.top,
-                    (float)bottom_screen.GetWidth(), (float)bottom_screen.GetHeight());
-            }
-        } else {
-            if (render_3d == Settings::StereoRenderOption::Off) {
-                DrawSingleScreen(2, (float)bottom_screen.left, (float)bottom_screen.top,
-                                 (float)bottom_screen.GetWidth(), (float)bottom_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::SideBySide) {
-                DrawSingleScreen(2, (float)bottom_screen.left / 2, (float)bottom_screen.top,
-                                 (float)bottom_screen.GetWidth() / 2,
-                                 (float)bottom_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreen(2, ((float)bottom_screen.left / 2) + ((float)layout.width / 2),
-                                 (float)bottom_screen.top, (float)bottom_screen.GetWidth() / 2,
-                                 (float)bottom_screen.GetHeight());
-            } else if (render_3d == Settings::StereoRenderOption::CardboardVR) {
-                DrawSingleScreen(2, layout.bottom_screen.left, layout.bottom_screen.top,
-                                 layout.bottom_screen.GetWidth(), layout.bottom_screen.GetHeight());
-                draw_info.layer = 1;
-                DrawSingleScreen(
-                    2, layout.cardboard.bottom_screen_right_eye + ((float)layout.width / 2),
-                    layout.bottom_screen.top, layout.bottom_screen.GetWidth(),
-                    layout.bottom_screen.GetHeight());
-            } else if (stereo_single_screen) {
-                DrawSingleScreenStereo(2, 2, (float)bottom_screen.left, (float)bottom_screen.top,
-                                       (float)bottom_screen.GetWidth(),
-                                       (float)bottom_screen.GetHeight());
-            }
-        }
+    if (!Settings::values.swap_screen.GetValue()) {
+        DrawTopScreen(layout, top_screen);
+        draw_info.layer = 0;
+        DrawBottomScreen(layout, bottom_screen);
+    } else {
+        DrawBottomScreen(layout, bottom_screen);
+        draw_info.layer = 0;
+        DrawTopScreen(layout, top_screen);
     }
 
     scheduler.Record([image = frame->image](vk::CommandBuffer cmdbuf) {
@@ -961,23 +896,23 @@ void RendererVulkan::DrawScreens(Frame* frame, const Layout::FramebufferLayout& 
 }
 
 void RendererVulkan::SwapBuffers() {
-    const auto& layout = render_window.GetFramebufferLayout();
+    const Layout::FramebufferLayout& layout = render_window.GetFramebufferLayout();
     PrepareRendertarget();
     RenderScreenshot();
-
-    RenderToMailbox(layout, mailbox, false);
-
-    m_current_frame++;
-
-    system.perf_stats->EndSystemFrame();
-    render_window.PollEvents();
-
-    system.frame_limiter.DoFrameLimiting(system.CoreTiming().GetGlobalTimeUs());
-    system.perf_stats->BeginSystemFrame();
-
-    if (Pica::g_debug_context && Pica::g_debug_context->recorder) {
-        Pica::g_debug_context->recorder->FrameFinished();
+    RenderToWindow(main_window, layout, false);
+#ifndef ANDROID
+    if (Settings::values.layout_option.GetValue() == Settings::LayoutOption::SeparateWindows) {
+        ASSERT(secondary_window);
+        const auto& secondary_layout = secondary_window->GetFramebufferLayout();
+        if (!second_window) {
+            second_window = std::make_unique<PresentWindow>(*secondary_window, instance, scheduler);
+        }
+        RenderToWindow(*second_window, secondary_layout, false);
+        secondary_window->PollEvents();
     }
+#endif
+    rasterizer.TickFrame();
+    EndFrame();
 }
 
 void RendererVulkan::RenderScreenshot() {
@@ -986,9 +921,8 @@ void RendererVulkan::RenderScreenshot() {
     }
 
     const Layout::FramebufferLayout layout{settings.screenshot_framebuffer_layout};
-    const vk::Extent2D extent = swapchain.GetExtent();
-    const u32 width = std::min(layout.width, extent.width);
-    const u32 height = std::min(layout.height, extent.height);
+    const u32 width = layout.width;
+    const u32 height = layout.height;
 
     const vk::ImageCreateInfo staging_image_info = {
         .imageType = vk::ImageType::e2D,
@@ -1030,7 +964,7 @@ void RendererVulkan::RenderScreenshot() {
     vk::Image staging_image{unsafe_image};
 
     Frame frame{};
-    mailbox->ReloadFrame(&frame, width, height);
+    main_window.RecreateFrame(&frame, width, height);
 
     DrawScreens(&frame, layout, false);
 
@@ -1169,13 +1103,7 @@ void RendererVulkan::RenderScreenshot() {
     settings.screenshot_complete_callback();
 }
 
-void RendererVulkan::NotifySurfaceChanged() {
-    scheduler.Finish();
-    vk::SurfaceKHR new_surface = CreateSurface(instance.GetInstance(), render_window);
-    mailbox->UpdateSurface(new_surface);
-}
-
-void RendererVulkan::Report() const {
+void RendererVulkan::ReportDriver() const {
     const std::string vendor_name{instance.GetVendorName()};
     const std::string model_name{instance.GetModelName()};
     const std::string driver_version = GetDriverVersion(instance);
@@ -1183,11 +1111,12 @@ void RendererVulkan::Report() const {
 
     const std::string api_version = GetReadableVersion(instance.ApiVersion());
 
-    const std::string extensions = BuildCommaSeparatedExtensions(instance.GetAvailableExtensions());
+    const std::string extensions =
+        fmt::format("{}", fmt::join(instance.GetAvailableExtensions(), ", "));
 
-    LOG_INFO(Render_Vulkan, "Driver: {}", driver_name);
-    LOG_INFO(Render_Vulkan, "Device: {}", model_name);
-    LOG_INFO(Render_Vulkan, "Vulkan: {}", api_version);
+    LOG_INFO(Render_Vulkan, "VK_DRIVER: {}", driver_name);
+    LOG_INFO(Render_Vulkan, "VK_DEVICE: {}", model_name);
+    LOG_INFO(Render_Vulkan, "VK_VERSION: {}", api_version);
 
     static constexpr auto field = Common::Telemetry::FieldType::UserSystem;
     telemetry_session.AddField(field, "GPU_Vendor", vendor_name);

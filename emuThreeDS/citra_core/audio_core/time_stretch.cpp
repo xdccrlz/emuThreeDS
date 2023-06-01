@@ -6,7 +6,7 @@
 #include <cmath>
 #include <cstddef>
 #include <memory>
-#include <SoundTouch.h>
+#include <SoundTouch/SoundTouch.h>
 #include "audio_core/audio_types.h"
 #include "audio_core/time_stretch.h"
 #include "common/logging/log.h"

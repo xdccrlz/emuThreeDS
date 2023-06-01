@@ -1,11 +1,11 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
 #pragma once
 
-#include <array>
-#include "common/async_handle.h"
+#include <compare>
+#include <tsl/robin_map.h>
 #include "common/bit_field.h"
 #include "common/hash.h"
 #include "common/thread_worker.h"
@@ -16,6 +16,35 @@
 namespace Pica {
 struct Regs;
 }
+
+namespace Common {
+
+struct AsyncHandle {
+public:
+    AsyncHandle(bool is_done_ = false) : is_done{is_done_} {}
+
+    [[nodiscard]] bool IsDone() noexcept {
+        return is_done.load(std::memory_order::relaxed);
+    }
+
+    void WaitDone() noexcept {
+        std::unique_lock lock{mutex};
+        condvar.wait(lock, [this] { return is_done.load(std::memory_order::relaxed); });
+    }
+
+    void MarkDone(bool done = true) noexcept {
+        std::scoped_lock lock{mutex};
+        is_done = done;
+        condvar.notify_all();
+    }
+
+private:
+    std::condition_variable condvar;
+    std::mutex mutex;
+    std::atomic_bool is_done{false};
+};
+
+} // namespace Common
 
 namespace Vulkan {
 
@@ -244,10 +273,12 @@ private:
     DescriptorManager& desc_manager;
 
     vk::PipelineCache pipeline_cache;
-    Common::ThreadWorker workers;
+    std::size_t num_worker_threads;
+    Common::ThreadWorker shader_workers;
+    Common::ThreadWorker pipeline_workers;
     PipelineInfo current_info{};
     GraphicsPipeline* current_pipeline{};
-    std::unordered_map<u64, std::unique_ptr<GraphicsPipeline>, Common::IdentityHash<u64>>
+    tsl::robin_map<u64, std::unique_ptr<GraphicsPipeline>, Common::IdentityHash<u64>>
         graphics_pipelines;
 
     enum ProgramType : u32 {

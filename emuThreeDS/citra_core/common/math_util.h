@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <compare>
 #include <cstdlib>
 #include <type_traits>
 
@@ -24,13 +23,6 @@ struct Rectangle {
     constexpr Rectangle(T left, T top, T right, T bottom)
         : left(left), top(top), right(right), bottom(bottom) {}
 
-    constexpr void operator*=(const T value) {
-        left *= value;
-        top *= value;
-        right *= value;
-        bottom *= value;
-    }
-
     [[nodiscard]] constexpr bool operator==(const Rectangle<T>& rhs) const {
         return (left == rhs.left) && (top == rhs.top) && (right == rhs.right) &&
                (bottom == rhs.bottom);
@@ -46,19 +38,20 @@ struct Rectangle {
     [[nodiscard]] constexpr Rectangle<T> operator/(const T value) const {
         return Rectangle{left / value, top / value, right / value, bottom / value};
     }
-    [[nodiscard]] constexpr T GetWidth() const {
+
+    [[nodiscard]] T GetWidth() const {
         return std::abs(static_cast<std::make_signed_t<T>>(right - left));
     }
-    [[nodiscard]] constexpr T GetHeight() const {
+    [[nodiscard]] T GetHeight() const {
         return std::abs(static_cast<std::make_signed_t<T>>(bottom - top));
     }
-    [[nodiscard]] constexpr Rectangle<T> TranslateX(const T x) const {
+    [[nodiscard]] Rectangle<T> TranslateX(const T x) const {
         return Rectangle{left + x, top, right + x, bottom};
     }
-    [[nodiscard]] constexpr Rectangle<T> TranslateY(const T y) const {
+    [[nodiscard]] Rectangle<T> TranslateY(const T y) const {
         return Rectangle{left, top + y, right, bottom + y};
     }
-    [[nodiscard]] constexpr Rectangle<T> Scale(const float s) const {
+    [[nodiscard]] Rectangle<T> Scale(const float s) const {
         return Rectangle{left, top, static_cast<T>(left + GetWidth() * s),
                          static_cast<T>(top + GetHeight() * s)};
     }

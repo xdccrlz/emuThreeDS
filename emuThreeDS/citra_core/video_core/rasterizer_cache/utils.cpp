@@ -1,19 +1,22 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include "common/assert.h"
-#include "video_core/rasterizer_cache/custom_tex_manager.h"
 #include "video_core/rasterizer_cache/surface_params.h"
 #include "video_core/rasterizer_cache/texture_codec.h"
 #include "video_core/rasterizer_cache/utils.h"
 
 namespace VideoCore {
 
-void StagingData::Wait() const noexcept {
-    if (flag) {
-        flag->wait(DecodeState::Pending);
+u32 MipLevels(u32 width, u32 height, u32 max_level) {
+    u32 levels = 1;
+    while (width > 8 && height > 8) {
+        levels++;
+        width >>= 1;
+        height >>= 1;
     }
+
+    return std::min(levels, max_level + 1);
 }
 
 void EncodeTexture(const SurfaceParams& surface_info, PAddr start_addr, PAddr end_addr,
@@ -38,21 +41,9 @@ void EncodeTexture(const SurfaceParams& surface_info, PAddr start_addr, PAddr en
         }
     }
 
-    LOG_ERROR(Render_Vulkan,
-              "Unimplemented texture encode function for pixel format = {}, tiled = {}", func_index,
-              surface_info.is_tiled);
-    UNREACHABLE();
-}
-
-u32 MipLevels(u32 width, u32 height, u32 max_level) {
-    u32 levels = 1;
-    while (width > 8 && height > 8) {
-        levels++;
-        width >>= 1;
-        height >>= 1;
-    }
-
-    return std::min(levels, max_level + 1);
+    LOG_ERROR(HW_GPU, "Unimplemented texture encode function for pixel format = {}, tiled = {}",
+              func_index, surface_info.is_tiled);
+    UNIMPLEMENTED();
 }
 
 void DecodeTexture(const SurfaceParams& surface_info, PAddr start_addr, PAddr end_addr,
@@ -77,10 +68,9 @@ void DecodeTexture(const SurfaceParams& surface_info, PAddr start_addr, PAddr en
         }
     }
 
-    LOG_ERROR(Render_Vulkan,
-              "Unimplemented texture decode function for pixel format = {}, tiled = {}", func_index,
-              surface_info.is_tiled);
-    UNREACHABLE();
+    LOG_ERROR(HW_GPU, "Unimplemented texture decode function for pixel format = {}, tiled = {}",
+              func_index, surface_info.is_tiled);
+    UNIMPLEMENTED();
 }
 
 } // namespace VideoCore

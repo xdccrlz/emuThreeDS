@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -22,19 +22,19 @@
 
 namespace Vulkan {
 
+vk::DynamicLoader& GetVulkanLoader() {
+    static vk::DynamicLoader dl("@executable_path/Frameworks/libMoltenVK.dylib");
+    return dl;
+}
+
 vk::SurfaceKHR CreateSurface(vk::Instance instance, const Frontend::EmuWindow& emu_window) {
     const auto& window_info = emu_window.GetWindowInfo();
     vk::SurfaceKHR surface{};
 
-    // Perform instance function loading here, to also load window system functions
-    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
+    const vk::MetalSurfaceCreateInfoEXT macos_ci = {
+        .pLayer = static_cast<const CAMetalLayer*>(window_info.render_surface)};
 
-    const vk::MetalSurfaceCreateInfoEXT create_info{
-        .pLayer = static_cast<const CAMetalLayer*>(window_info.render_surface),
-        .sType = vk::StructureType::eMetalSurfaceCreateInfoEXT
-    };
-
-    if (instance.createMetalSurfaceEXT(&create_info, nullptr, &surface) != vk::Result::eSuccess) {
+    if (instance.createMetalSurfaceEXT(&macos_ci, nullptr, &surface) != vk::Result::eSuccess) {
         LOG_CRITICAL(Render_Vulkan, "Failed to initialize MacOS surface");
         UNREACHABLE();
     }
@@ -115,6 +115,11 @@ std::vector<const char*> GetInstanceExtensions(Frontend::WindowSystemType window
     });
 
     return extensions;
+}
+
+void LoadInstanceFunctions(vk::Instance instance) {
+    // Perform instance function loading here, to also load window system functions
+    VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
 }
 
 vk::InstanceCreateFlags GetInstanceFlags() {

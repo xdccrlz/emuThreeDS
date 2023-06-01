@@ -4,92 +4,104 @@
 #pragma once
 
 #include <atomic>
-#include <limits>
-#include <mutex>
-#include <thread>
-#include <vector>
+#include <condition_variable>
+#include <queue>
 #include "common/common_types.h"
+#include "common/polyfill_thread.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
 namespace Vulkan {
 
 class Instance;
-
-constexpr u64 WAIT_TIMEOUT = std::numeric_limits<u64>::max();
+class Scheduler;
 
 class MasterSemaphore {
 public:
-    explicit MasterSemaphore(const Instance& instance);
-    ~MasterSemaphore();
+    virtual ~MasterSemaphore() = default;
 
-    /// Returns the current logical tick.
     [[nodiscard]] u64 CurrentTick() const noexcept {
         return current_tick.load(std::memory_order_acquire);
     }
 
-    /// Returns the last known GPU tick.
     [[nodiscard]] u64 KnownGpuTick() const noexcept {
         return gpu_tick.load(std::memory_order_acquire);
     }
 
-    /// Returns the timeline semaphore handle.
-    [[nodiscard]] vk::Semaphore Handle() const noexcept {
-        return semaphore;
-    }
-
-    /// Returns true when a tick has been hit by the GPU.
     [[nodiscard]] bool IsFree(u64 tick) const noexcept {
         return KnownGpuTick() >= tick;
     }
 
-    /// Advance to the logical tick and return the old one
     [[nodiscard]] u64 NextTick() noexcept {
         return current_tick.fetch_add(1, std::memory_order_release);
     }
 
     /// Refresh the known GPU tick
-    void Refresh() {
-        u64 this_tick{};
-        u64 counter{};
-        do {
-            this_tick = gpu_tick.load(std::memory_order_acquire);
-            counter = device.getSemaphoreCounterValueKHR(semaphore);
-            if (counter < this_tick) {
-                return;
-            }
-        } while (!gpu_tick.compare_exchange_weak(this_tick, counter, std::memory_order_release,
-                                                 std::memory_order_relaxed));
-    }
+    virtual void Refresh() = 0;
 
     /// Waits for a tick to be hit on the GPU
-    void Wait(u64 tick) {
-        // No need to wait if the GPU is ahead of the tick
-        if (IsFree(tick)) {
-            return;
-        }
-        // Update the GPU tick and try again
-        Refresh();
-        if (IsFree(tick)) {
-            return;
-        }
+    virtual void Wait(u64 tick) = 0;
 
-        // If none of the above is hit, fallback to a regular wait
-        const vk::SemaphoreWaitInfoKHR wait_info = {
-            .semaphoreCount = 1,
-            .pSemaphores = &semaphore,
-            .pValues = &tick,
-        };
+    /// Submits the provided command buffer for execution
+    virtual void SubmitWork(vk::CommandBuffer cmdbuf, vk::Semaphore wait, vk::Semaphore signal,
+                            u64 signal_value) = 0;
 
-        while (device.waitSemaphoresKHR(&wait_info, WAIT_TIMEOUT) != vk::Result::eSuccess) {
-        }
-        Refresh();
-    }
-
-private:
-    vk::Device device;
-    vk::Semaphore semaphore;          ///< Timeline semaphore.
+protected:
     std::atomic<u64> gpu_tick{0};     ///< Current known GPU tick.
     std::atomic<u64> current_tick{1}; ///< Current logical tick.
+};
+
+class MasterSemaphoreTimeline : public MasterSemaphore {
+public:
+    explicit MasterSemaphoreTimeline(const Instance& instance);
+    ~MasterSemaphoreTimeline() override;
+
+    [[nodiscard]] vk::Semaphore Handle() const noexcept {
+        return semaphore.get();
+    }
+
+    void Refresh() override;
+
+    void Wait(u64 tick) override;
+
+    void SubmitWork(vk::CommandBuffer cmdbuf, vk::Semaphore wait, vk::Semaphore signal,
+                    u64 signal_value) override;
+
+private:
+    const Instance& instance;
+    vk::UniqueSemaphore semaphore; ///< Timeline semaphore.
+};
+
+class MasterSemaphoreFence : public MasterSemaphore {
+public:
+    explicit MasterSemaphoreFence(const Instance& instance);
+    ~MasterSemaphoreFence() override;
+
+    void Refresh() override;
+
+    void Wait(u64 tick) override;
+
+    void SubmitWork(vk::CommandBuffer cmdbuf, vk::Semaphore wait, vk::Semaphore signal,
+                    u64 signal_value) override;
+
+private:
+    void WaitThread(std::stop_token token);
+
+    vk::UniqueFence GetFreeFence();
+
+private:
+    const Instance& instance;
+
+    struct Fence {
+        vk::UniqueFence handle;
+        u64 signal_value;
+    };
+
+    std::queue<vk::UniqueFence> free_queue;
+    std::queue<Fence> wait_queue;
+    std::mutex free_mutex;
+    std::mutex wait_mutex;
+    std::condition_variable_any wait_cv;
+    std::jthread wait_thread;
 };
 
 } // namespace Vulkan

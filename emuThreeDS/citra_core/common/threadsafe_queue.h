@@ -13,10 +13,8 @@
 #include <mutex>
 #include <utility>
 
-#include "common/polyfill_thread.h"
-
 namespace Common {
-template <typename T, bool with_stop_token = false>
+template <typename T>
 class SPSCQueue {
 public:
     SPSCQueue() {
@@ -42,19 +40,21 @@ public:
     template <typename Arg>
     void Push(Arg&& t) {
         // create the element, add it to the queue
-        write_ptr->current = std::move(t);
+        write_ptr->current = std::forward<Arg>(t);
         // set the next pointer to a new element ptr
         // then advance the write pointer
         ElementPtr* new_ptr = new ElementPtr();
         write_ptr->next.store(new_ptr, std::memory_order_release);
         write_ptr = new_ptr;
-        ++size;
 
-        // cv_mutex must be held or else there will be a missed wakeup if the other thread is in the
-        // line before cv.wait
+        const size_t previous_size{size++};
+
+        // Acquire the mutex and then immediately release it as a fence.
         // TODO(bunnei): This can be replaced with C++20 waitable atomics when properly supported.
         // See discussion on https://github.com/yuzu-emu/yuzu/pull/3173 for details.
-        std::scoped_lock lock{cv_mutex};
+        if (previous_size == 0) {
+            std::lock_guard lock{cv_mutex};
+        }
         cv.notify_one();
     }
 
@@ -83,27 +83,10 @@ public:
         return true;
     }
 
-    void Wait() {
-        if (Empty()) {
-            std::unique_lock lock{cv_mutex};
-            cv.wait(lock, [this] { return !Empty(); });
-        }
-    }
-
     T PopWait() {
-        Wait();
-        T t;
-        Pop(t);
-        return t;
-    }
-
-    T PopWait(std::stop_token stop_token) {
         if (Empty()) {
             std::unique_lock lock{cv_mutex};
-            Common::CondvarWait(cv, lock, stop_token, [this] { return !Empty(); });
-        }
-        if (stop_token.stop_requested()) {
-            return T{};
+            cv.wait(lock, [this]() { return !Empty(); });
         }
         T t;
         Pop(t);
@@ -122,7 +105,7 @@ private:
     // and a pointer to the next ElementPtr
     class ElementPtr {
     public:
-        ElementPtr() {}
+        ElementPtr() = default;
         ~ElementPtr() {
             ElementPtr* next_ptr = next.load();
 
@@ -138,13 +121,13 @@ private:
     ElementPtr* read_ptr;
     std::atomic_size_t size{0};
     std::mutex cv_mutex;
-    std::conditional_t<with_stop_token, std::condition_variable_any, std::condition_variable> cv;
+    std::condition_variable cv;
 };
 
 // a simple thread-safe,
 // single reader, multiple writer queue
 
-template <typename T, bool with_stop_token = false>
+template <typename T>
 class MPSCQueue {
 public:
     [[nodiscard]] std::size_t Size() const {
@@ -161,7 +144,7 @@ public:
 
     template <typename Arg>
     void Push(Arg&& t) {
-        std::scoped_lock lock{write_lock};
+        std::lock_guard lock{write_lock};
         spsc_queue.Push(t);
     }
 
@@ -173,16 +156,8 @@ public:
         return spsc_queue.Pop(t);
     }
 
-    void Wait() {
-        spsc_queue.Wait();
-    }
-
     T PopWait() {
         return spsc_queue.PopWait();
-    }
-
-    T PopWait(std::stop_token stop_token) {
-        return spsc_queue.PopWait(stop_token);
     }
 
     // not thread-safe
@@ -191,7 +166,7 @@ public:
     }
 
 private:
-    SPSCQueue<T, with_stop_token> spsc_queue;
+    SPSCQueue<T> spsc_queue;
     std::mutex write_lock;
 };
 } // namespace Common

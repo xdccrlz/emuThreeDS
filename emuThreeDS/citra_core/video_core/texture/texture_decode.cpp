@@ -2,10 +2,10 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
-#include <bit>
 #include "common/assert.h"
 #include "common/color.h"
 #include "common/logging/log.h"
+#include "common/math_util.h"
 #include "common/swap.h"
 #include "common/vector_math.h"
 #include "video_core/regs_texturing.h"
@@ -105,36 +105,47 @@ Common::Vec4<u8> LookupTexelInTile(const u8* source, unsigned int x, unsigned in
     }
 
     case TextureFormat::IA8: {
-        auto res = Common::Color::DecodeIA8(source + MortonInterleave(x, y) * 2);
-        return {res.r(), res.g(), res.b(), static_cast<u8>(disable_alpha ? 255 : res.a())};
+        const u8* source_ptr = source + MortonInterleave(x, y) * 2;
+
+        if (disable_alpha) {
+            // Show intensity as red, alpha as green
+            return {source_ptr[1], source_ptr[0], 0, 255};
+        } else {
+            return {source_ptr[1], source_ptr[1], source_ptr[1], source_ptr[0]};
+        }
     }
 
     case TextureFormat::RG8: {
         auto res = Common::Color::DecodeRG8(source + MortonInterleave(x, y) * 2);
-        return {res.r(), res.g(), res.b(), static_cast<u8>(disable_alpha ? 255 : res.a())};
+        return {res.r(), res.g(), 0, 255};
     }
 
     case TextureFormat::I8: {
-        auto res = Common::Color::DecodeI8(source + MortonInterleave(x, y) * 2);
-        return {res.r(), res.g(), res.b(), static_cast<u8>(disable_alpha ? 255 : res.a())};
+        const u8* source_ptr = source + MortonInterleave(x, y);
+        return {*source_ptr, *source_ptr, *source_ptr, 255};
     }
 
     case TextureFormat::A8: {
-        auto res = Common::Color::DecodeA8(source + MortonInterleave(x, y) * 2);
+        const u8* source_ptr = source + MortonInterleave(x, y);
+
         if (disable_alpha) {
-            return {res.a(), res.a(), res.a(), 255};
+            return {*source_ptr, *source_ptr, *source_ptr, 255};
         } else {
-            return res;
+            return {0, 0, 0, *source_ptr};
         }
     }
 
     case TextureFormat::IA4: {
-        auto res = Common::Color::DecodeIA4(source + MortonInterleave(x, y) * 2);
+        const u8* source_ptr = source + MortonInterleave(x, y);
+
+        u8 i = Common::Color::Convert4To8(((*source_ptr) & 0xF0) >> 4);
+        u8 a = Common::Color::Convert4To8((*source_ptr) & 0xF);
+
         if (disable_alpha) {
             // Show intensity as red, alpha as green
-            return {res.r(), res.a(), 0, 255};
+            return {i, a, 0, 255};
         } else {
-            return res;
+            return {i, i, i, a};
         }
     }
 

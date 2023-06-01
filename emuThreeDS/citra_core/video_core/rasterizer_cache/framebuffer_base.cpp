@@ -10,8 +10,8 @@ namespace VideoCore {
 
 FramebufferBase::FramebufferBase() = default;
 
-FramebufferBase::FramebufferBase(const Pica::Regs& regs, SurfaceBase* const color,
-                                 SurfaceBase* const depth_stencil,
+FramebufferBase::FramebufferBase(const Pica::Regs& regs, const SurfaceBase* color, u32 color_level,
+                                 const SurfaceBase* depth_stencil, u32 depth_level,
                                  Common::Rectangle<u32> surfaces_rect) {
     res_scale = color ? color->res_scale : (depth_stencil ? depth_stencil->res_scale : 1u);
 
@@ -31,10 +31,10 @@ FramebufferBase::FramebufferBase(const Pica::Regs& regs, SurfaceBase* const colo
                         surfaces_rect.bottom, surfaces_rect.top);
 
     // Update viewport
-    viewport.x = surfaces_rect.left + viewport_rect.left * res_scale;
-    viewport.y = surfaces_rect.bottom + viewport_rect.bottom * res_scale;
-    viewport.width = viewport_rect.GetWidth() * res_scale;
-    viewport.height = viewport_rect.GetHeight() * res_scale;
+    viewport.x = static_cast<s32>(surfaces_rect.left) + viewport_rect.left * res_scale;
+    viewport.y = static_cast<s32>(surfaces_rect.bottom) + viewport_rect.bottom * res_scale;
+    viewport.width = static_cast<s32>(viewport_rect.GetWidth() * res_scale);
+    viewport.height = static_cast<s32>(viewport_rect.GetHeight() * res_scale);
 
     // Scissor checks are window-, not viewport-relative, which means that if the cached texture
     // sub-rect changes, the scissor bounds also need to be updated.
@@ -50,15 +50,23 @@ FramebufferBase::FramebufferBase(const Pica::Regs& regs, SurfaceBase* const colo
     scissor_rect.top =
         static_cast<s32>(surfaces_rect.bottom + (regs.rasterizer.scissor_test.y2 + 1) * res_scale);
 
+    // Rendering to mipmaps is something quite rare so log it when it occurs.
+    if (color_level != 0) {
+        LOG_WARNING(HW_GPU, "Game is rendering to color mipmap {}", color_level);
+    }
+    if (depth_level != 0) {
+        LOG_WARNING(HW_GPU, "Game is rendering to depth mipmap {}", depth_level);
+    }
+
     // Query surface invalidation intervals
     const Common::Rectangle draw_rect_unscaled{draw_rect / res_scale};
     if (color) {
         color_params = *color;
-        intervals[0] = color->GetSubRectInterval(draw_rect_unscaled);
+        intervals[0] = color->GetSubRectInterval(draw_rect_unscaled, color_level);
     }
     if (depth_stencil) {
         depth_params = *depth_stencil;
-        intervals[1] = depth_stencil->GetSubRectInterval(draw_rect_unscaled);
+        intervals[1] = depth_stencil->GetSubRectInterval(draw_rect_unscaled, depth_level);
     }
 }
 

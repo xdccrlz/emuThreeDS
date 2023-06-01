@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2020 yuzu Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #pragma once
 
@@ -24,22 +25,23 @@ class StatefulThreadWorker {
     static constexpr bool with_state = !std::is_same_v<StateType, void>;
 
     struct DummyCallable {
-        int operator()() const noexcept {
+        int operator()(size_t) const noexcept {
             return 0;
         }
     };
 
     using Task =
         std::conditional_t<with_state, UniqueFunction<void, StateType*>, UniqueFunction<void>>;
-    using StateMaker = std::conditional_t<with_state, std::function<StateType()>, DummyCallable>;
+    using StateMaker =
+        std::conditional_t<with_state, std::function<StateType(size_t)>, DummyCallable>;
 
 public:
     explicit StatefulThreadWorker(size_t num_workers, std::string_view name, StateMaker func = {})
         : workers_queued{num_workers}, thread_name{name} {
-        const auto lambda = [this, func](std::stop_token stop_token) {
+        const auto lambda = [this, func](std::stop_token stop_token, size_t index) {
             Common::SetCurrentThreadName(thread_name.data());
             {
-                [[maybe_unused]] std::conditional_t<with_state, StateType, int> state{func()};
+                [[maybe_unused]] std::conditional_t<with_state, StateType, int> state{func(index)};
                 while (!stop_token.stop_requested()) {
                     Task task;
                     {
@@ -68,7 +70,7 @@ public:
         };
         threads.reserve(num_workers);
         for (size_t i = 0; i < num_workers; ++i) {
-            threads.emplace_back(lambda);
+            threads.emplace_back(lambda, i);
         }
     }
 

@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -679,7 +679,8 @@ void RasterizerAccelerated::SyncProcTexBias() {
 }
 
 void RasterizerAccelerated::SyncAlphaTest() {
-    if (regs.framebuffer.output_merger.alpha_test.ref != uniform_block_data.data.alphatest_ref) {
+    if (regs.framebuffer.output_merger.alpha_test.ref !=
+        static_cast<u32>(uniform_block_data.data.alphatest_ref)) {
         uniform_block_data.data.alphatest_ref = regs.framebuffer.output_merger.alpha_test.ref;
         uniform_block_data.dirty = true;
     }

@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: Copyright 2019 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2019 yuzu Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #include <mutex>
 #include <utility>
@@ -14,6 +15,18 @@ MICROPROFILE_DEFINE(Vulkan_WaitForWorker, "Vulkan", "Wait for worker", MP_RGB(25
 MICROPROFILE_DEFINE(Vulkan_Submit, "Vulkan", "Submit Exectution", MP_RGB(255, 192, 255));
 
 namespace Vulkan {
+
+namespace {
+
+std::unique_ptr<MasterSemaphore> MakeMasterSemaphore(const Instance& instance) {
+    if (instance.IsTimelineSemaphoreSupported()) {
+        return std::make_unique<MasterSemaphoreTimeline>(instance);
+    } else {
+        return std::make_unique<MasterSemaphoreFence>(instance);
+    }
+}
+
+} // Anonymous namespace
 
 void Scheduler::CommandChunk::ExecuteAll(vk::CommandBuffer cmdbuf) {
     auto command = first;
@@ -30,9 +43,10 @@ void Scheduler::CommandChunk::ExecuteAll(vk::CommandBuffer cmdbuf) {
 }
 
 Scheduler::Scheduler(const Instance& instance, RenderpassCache& renderpass_cache)
-    : instance{instance}, renderpass_cache{renderpass_cache}, master_semaphore{instance},
-      command_pool{instance, master_semaphore}, use_worker_thread{
-                                                    !Settings::values.renderer_debug} {
+    : instance{instance}, renderpass_cache{renderpass_cache}, master_semaphore{MakeMasterSemaphore(
+                                                                  instance)},
+      command_pool{instance, master_semaphore.get()}, use_worker_thread{
+                                                          !Settings::values.renderer_debug} {
     AllocateWorkerCommandBuffers();
     if (use_worker_thread) {
         AcquireNewChunk();
@@ -74,11 +88,11 @@ void Scheduler::WaitWorker() {
 }
 
 void Scheduler::Wait(u64 tick) {
-    if (tick >= master_semaphore.CurrentTick()) {
+    if (tick >= master_semaphore->CurrentTick()) {
         // Make sure we are not waiting for the current tick without signalling
         Flush();
     }
-    master_semaphore.Wait(tick);
+    master_semaphore->Wait(tick);
 }
 
 void Scheduler::DispatchWork() {
@@ -158,55 +172,15 @@ void Scheduler::AllocateWorkerCommandBuffers() {
 }
 
 void Scheduler::SubmitExecution(vk::Semaphore signal_semaphore, vk::Semaphore wait_semaphore) {
-    const vk::Semaphore handle = master_semaphore.Handle();
-    const u64 signal_value = master_semaphore.NextTick();
     state = StateFlags::AllDirty;
+    const u64 signal_value = master_semaphore->NextTick();
 
     renderpass_cache.EndRendering();
-    Record(
-        [signal_semaphore, wait_semaphore, handle, signal_value, this](vk::CommandBuffer cmdbuf) {
-            MICROPROFILE_SCOPE(Vulkan_Submit);
-            cmdbuf.end();
-
-            const u32 num_signal_semaphores = signal_semaphore ? 2U : 1U;
-            const std::array signal_values{signal_value, u64(0)};
-            const std::array signal_semaphores{handle, signal_semaphore};
-
-            const u32 num_wait_semaphores = wait_semaphore ? 2U : 1U;
-            const std::array wait_values{signal_value - 1, u64(1)};
-            const std::array wait_semaphores{handle, wait_semaphore};
-
-            static constexpr std::array<vk::PipelineStageFlags, 2> wait_stage_masks = {
-                vk::PipelineStageFlagBits::eAllCommands,
-                vk::PipelineStageFlagBits::eColorAttachmentOutput,
-            };
-
-            const vk::TimelineSemaphoreSubmitInfoKHR timeline_si = {
-                .waitSemaphoreValueCount = num_wait_semaphores,
-                .pWaitSemaphoreValues = wait_values.data(),
-                .signalSemaphoreValueCount = num_signal_semaphores,
-                .pSignalSemaphoreValues = signal_values.data(),
-            };
-
-            const vk::SubmitInfo submit_info = {
-                .pNext = &timeline_si,
-                .waitSemaphoreCount = num_wait_semaphores,
-                .pWaitSemaphores = wait_semaphores.data(),
-                .pWaitDstStageMask = wait_stage_masks.data(),
-                .commandBufferCount = 1u,
-                .pCommandBuffers = &cmdbuf,
-                .signalSemaphoreCount = num_signal_semaphores,
-                .pSignalSemaphores = signal_semaphores.data(),
-            };
-
-            try {
-                std::scoped_lock lock{queue_mutex};
-                instance.GetGraphicsQueue().submit(submit_info);
-            } catch (vk::DeviceLostError& err) {
-                LOG_CRITICAL(Render_Vulkan, "Device lost during submit: {}", err.what());
-                UNREACHABLE();
-            }
-        });
+    Record([signal_semaphore, wait_semaphore, signal_value, this](vk::CommandBuffer cmdbuf) {
+        MICROPROFILE_SCOPE(Vulkan_Submit);
+        std::scoped_lock lock{queue_mutex};
+        master_semaphore->SubmitWork(cmdbuf, wait_semaphore, signal_semaphore, signal_value);
+    });
 
     if (!use_worker_thread) {
         AllocateWorkerCommandBuffers();

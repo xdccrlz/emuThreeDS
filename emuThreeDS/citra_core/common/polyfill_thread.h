@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: 2022 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2022 yuzu Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 //
 // TODO: remove this file when jthread is supported by all compilation targets
@@ -334,4 +335,4 @@ void CondvarWait(Condvar& cv, Lock& lock, std::stop_token token, Pred pred) {
 
 } // namespace Common
 
-#endif
+#endif // __cpp_lib_jthread

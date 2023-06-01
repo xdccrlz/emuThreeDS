@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -9,7 +9,8 @@
 
 namespace VideoCore {
 struct TextureBlit;
-}
+struct BufferTextureCopy;
+} // namespace VideoCore
 
 namespace Vulkan {
 
@@ -25,16 +26,16 @@ public:
                RenderpassCache& renderpass_cache);
     ~BlitHelper();
 
-    /// Blits depth-stencil textures using helper shader
     bool BlitDepthStencil(Surface& source, Surface& dest, const VideoCore::TextureBlit& blit);
 
-    /// Blits D24S8 pixel data to the provided buffer
-    void BlitD24S8ToR32(Surface& depth_surface, Surface& r32_surface,
-                        const VideoCore::TextureBlit& blit);
+    bool ConvertDS24S8ToRGBA8(Surface& source, Surface& dest, const VideoCore::TextureBlit& blit);
+
+    bool DepthToBuffer(Surface& source, vk::Buffer buffer,
+                       const VideoCore::BufferTextureCopy& copy);
 
 private:
     /// Creates compute pipelines used for blit
-    void MakeComputePipelines();
+    vk::Pipeline MakeComputePipeline(vk::ShaderModule shader, vk::PipelineLayout layout);
 
     /// Creates graphics pipelines used for blit
     vk::Pipeline MakeDepthStencilBlitPipeline();
@@ -49,17 +50,22 @@ private:
     vk::RenderPass r32_renderpass;
 
     vk::DescriptorSetLayout compute_descriptor_layout;
+    vk::DescriptorSetLayout compute_buffer_descriptor_layout;
     vk::DescriptorSetLayout two_textures_descriptor_layout;
     vk::DescriptorUpdateTemplate compute_update_template;
+    vk::DescriptorUpdateTemplate compute_buffer_update_template;
     vk::DescriptorUpdateTemplate two_textures_update_template;
     vk::PipelineLayout compute_pipeline_layout;
+    vk::PipelineLayout compute_buffer_pipeline_layout;
     vk::PipelineLayout two_textures_pipeline_layout;
 
     vk::ShaderModule full_screen_vert;
-    vk::ShaderModule copy_d24s8_to_r32_comp;
+    vk::ShaderModule d24s8_to_rgba8_comp;
+    vk::ShaderModule depth_to_buffer_comp;
     vk::ShaderModule blit_depth_stencil_frag;
 
-    vk::Pipeline copy_d24s8_to_r32_pipeline;
+    vk::Pipeline d24s8_to_rgba8_pipeline;
+    vk::Pipeline depth_to_buffer_pipeline;
     vk::Pipeline depth_blit_pipeline;
     vk::Sampler linear_sampler;
     vk::Sampler nearest_sampler;

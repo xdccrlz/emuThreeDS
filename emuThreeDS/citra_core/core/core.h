@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -20,7 +21,8 @@ class ARM_Interface;
 
 namespace Frontend {
 class EmuWindow;
-}
+class ImageInterface;
+} // namespace Frontend
 
 namespace Memory {
 class MemorySystem;
@@ -88,12 +90,9 @@ public:
         ErrorLoader_ErrorGbaTitle, ///< Error loading the specified application as it is GBA Virtual
                                    ///< Console
         ErrorSystemFiles,          ///< Error in finding system files
-        ErrorVideoCore,            ///< Error in the video core
-        ErrorVideoCore_ErrorGenericDrivers, ///< Error in the video core due to the user having
-                                            /// generic drivers installed
-        ErrorSavestate,                     ///< Error saving or loading
-        ShutdownRequested,                  ///< Emulated program requested a system shutdown
-        ErrorUnknown                        ///< Any other error
+        ErrorSavestate,            ///< Error saving or loading
+        ShutdownRequested,         ///< Emulated program requested a system shutdown
+        ErrorUnknown               ///< Any other error
     };
 
     ~System();
@@ -153,10 +152,7 @@ public:
      * @returns True if the emulated system is powered on, otherwise false.
      */
     [[nodiscard]] bool IsPoweredOn() const {
-        return cpu_cores.size() > 0 &&
-               std::all_of(cpu_cores.begin(), cpu_cores.end(),
-                           [](std::shared_ptr<ARM_Interface> ptr) { return ptr != nullptr; });
-        ;
+        return is_powered_on;
     }
 
     /**
@@ -256,10 +252,10 @@ public:
     /// Gets a const reference to the cheat engine
     [[nodiscard]] const Cheats::CheatEngine& CheatEngine() const;
 
-    /// Gets a reference to the custom texture management system
+    /// Gets a reference to the custom texture cache system
     [[nodiscard]] VideoCore::CustomTexManager& CustomTexManager();
 
-    /// Gets a const reference to the custom texture management system
+    /// Gets a const reference to the custom texture cache system
     [[nodiscard]] const VideoCore::CustomTexManager& CustomTexManager() const;
 
     /// Gets a reference to the video dumper backend
@@ -298,6 +294,25 @@ public:
 
     [[nodiscard]] std::shared_ptr<Frontend::SoftwareKeyboard> GetSoftwareKeyboard() const {
         return registered_swkbd;
+    }
+
+    /// Image interface
+
+    void RegisterImageInterface(std::shared_ptr<Frontend::ImageInterface> image_interface);
+
+    [[nodiscard]] std::shared_ptr<Frontend::ImageInterface> GetImageInterface() const {
+        return registered_image_interface;
+    }
+
+    /// Function for checking OS microphone permissions.
+
+    void RegisterMicPermissionCheck(const std::function<bool()>& permission_func) {
+        mic_permission_func = permission_func;
+    }
+
+    [[nodiscard]] bool HasMicPermission() {
+        return !mic_permission_func || mic_permission_granted ||
+               (mic_permission_granted = mic_permission_func());
     }
 
     void SaveState(u32 slot) const;
@@ -360,6 +375,9 @@ private:
     /// Custom texture cache system
     std::unique_ptr<VideoCore::CustomTexManager> custom_tex_manager;
 
+    /// Image interface
+    std::shared_ptr<Frontend::ImageInterface> registered_image_interface;
+
     /// RPC Server for scripting support
     std::unique_ptr<RPC::RPCServer> rpc_server;
 
@@ -374,7 +392,7 @@ private:
 private:
     static System s_instance;
 
-    bool initalized = false;
+    std::atomic_bool is_powered_on{};
 
     ResultStatus status = ResultStatus::Success;
     std::string status_details = "";
@@ -389,6 +407,9 @@ private:
     std::mutex signal_mutex;
     Signal current_signal;
     u32 signal_param;
+
+    std::function<bool()> mic_permission_func;
+    bool mic_permission_granted = false;
 
     friend class boost::serialization::access;
     template <typename Archive>

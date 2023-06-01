@@ -6,6 +6,7 @@
 
 #include <array>
 #include "common/bit_field.h"
+#include "common/common_funcs.h"
 #include "common/math_util.h"
 #include "common/vector_math.h"
 #include "video_core/pica_types.h"
@@ -18,7 +19,7 @@ struct RasterizerRegs {
         KeepAll = 0,
         KeepClockWise = 1,
         KeepCounterClockWise = 2,
-        KeepAll2 = 3
+        // TODO: What does the third value imply?
     };
 
     union {

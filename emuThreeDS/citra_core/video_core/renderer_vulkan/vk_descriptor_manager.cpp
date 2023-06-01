@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -6,7 +6,6 @@
 #include "video_core/renderer_vulkan/vk_descriptor_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
-#include "vulkan/vulkan.hpp"
 
 namespace {
 
@@ -54,13 +53,7 @@ constexpr static std::array RASTERIZER_SETS = {
             vk::DescriptorType::eStorageImage,
             vk::DescriptorType::eStorageImage,
         },
-#ifdef ANDROID
-        .binding_count = 4, // TODO: Combine cube faces to a single storage image
-                            // some android devices only expose up to four storage
-                            // slots per pipeline
-#else
         .binding_count = 7,
-#endif
     },
 };
 

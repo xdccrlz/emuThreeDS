@@ -5,11 +5,6 @@
 #pragma once
 
 #include <string>
-#include "common/arch.h"
-
-#if !CITRA_ARCH(x86_64)
-#include <cstdlib> // for exit
-#endif
 #include "common/common_types.h"
 
 /// Textually concatenates two tokens. The double-expansion is required by the C preprocessor.
@@ -33,6 +28,12 @@
 #define CITRA_NO_INLINE __declspec(noinline)
 #else
 #define CITRA_NO_INLINE __attribute__((noinline))
+#endif
+
+#ifdef _MSC_VER
+#define CITRA_NO_RETURN __declspec(noreturn)
+#else
+#define CITRA_NO_RETURN __attribute__((noreturn))
 #endif
 
 #ifdef _MSC_VER

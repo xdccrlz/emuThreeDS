@@ -1,21 +1,12 @@
 {
   "pins" : [
     {
-      "identity" : "openssl",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/krzyzanowskim/OpenSSL",
-      "state" : {
-        "revision" : "87f41bf9488e7dd2b0de2ab97cb3eafc7304e0e6",
-        "version" : "1.1.2000"
-      }
-    },
-    {
       "identity" : "zstd",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/facebook/zstd",
       "state" : {
         "branch" : "dev",
-        "revision" : "0f255ff4faaa6ba414272bf7f239ddb4891cdda2"
+        "revision" : "7806d803383b75b00868a5367154a18caf535a92"
       }
     }
   ],

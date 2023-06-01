@@ -16,10 +16,10 @@ namespace VideoCore {
 class SurfaceBase;
 
 struct ViewportInfo {
-    f32 x;
-    f32 y;
-    f32 width;
-    f32 height;
+    s32 x;
+    s32 y;
+    s32 width;
+    s32 height;
 };
 
 /**
@@ -29,8 +29,9 @@ struct ViewportInfo {
 class FramebufferBase {
 public:
     FramebufferBase();
-    FramebufferBase(const Pica::Regs& regs, SurfaceBase* const color,
-                    SurfaceBase* const depth_stencil, Common::Rectangle<u32> surfaces_rect);
+    FramebufferBase(const Pica::Regs& regs, const SurfaceBase* color, u32 color_level,
+                    const SurfaceBase* depth_stencil, u32 depth_level,
+                    Common::Rectangle<u32> surfaces_rect);
 
     SurfaceParams ColorParams() const noexcept {
         return color_params;
@@ -65,10 +66,11 @@ protected:
         switch (type) {
         case VideoCore::SurfaceType::Color:
             return 0;
+        case VideoCore::SurfaceType::Depth:
         case VideoCore::SurfaceType::DepthStencil:
             return 1;
         default:
-            LOG_CRITICAL(Render_Vulkan, "Unknown surface type in framebuffer");
+            LOG_CRITICAL(HW_GPU, "Unknown surface type in framebuffer");
             return 0;
         }
     }

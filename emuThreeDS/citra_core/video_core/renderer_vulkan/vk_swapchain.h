@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -13,15 +13,15 @@ namespace Vulkan {
 
 class Instance;
 class Scheduler;
-class RenderpassCache;
 
 class Swapchain {
 public:
-    Swapchain(const Instance& instance, Scheduler& scheduler, RenderpassCache& renderpass_cache);
+    explicit Swapchain(const Instance& instance, Scheduler& scheduler, u32 width, u32 height,
+                       vk::SurfaceKHR surface);
     ~Swapchain();
 
     /// Creates (or recreates) the swapchain with a given size.
-    void Create(vk::SurfaceKHR new_surface = {});
+    void Create(u32 width, u32 height, vk::SurfaceKHR surface);
 
     /// Acquires the next image in the swapchain.
     bool AcquireNextImage();
@@ -29,39 +29,32 @@ public:
     /// Presents the current image and move to the next one
     void Present();
 
-    /// Returns true when the swapchain should be recreated
-    [[nodiscard]] bool NeedsRecreation() const {
-        return needs_recreation;
-    }
-
-    /// Notfies that the swapchain needs recreation
-    void SetNeedsRecreation(bool value) noexcept {
-        needs_recreation = value;
-    }
-
-    /// Returns current swapchain state
-    [[nodiscard]] vk::Extent2D GetExtent() const {
-        return extent;
-    }
-
-    /// Returns the swapchain surface
-    [[nodiscard]] vk::SurfaceKHR GetSurface() const {
+    vk::SurfaceKHR GetSurface() const {
         return surface;
     }
 
-    /// Returns the current image
-    [[nodiscard]] vk::Image Image() const {
+    vk::Image Image() const {
         return images[image_index];
     }
 
-    /// Returns the swapchain format
-    [[nodiscard]] vk::SurfaceFormatKHR GetSurfaceFormat() const {
+    vk::SurfaceFormatKHR GetSurfaceFormat() const {
         return surface_format;
     }
 
-    /// Returns the Vulkan swapchain handle
-    [[nodiscard]] vk::SwapchainKHR GetHandle() const {
+    vk::SwapchainKHR GetHandle() const {
         return swapchain;
+    }
+
+    u32 GetWidth() const {
+        return width;
+    }
+
+    u32 GetHeight() const {
+        return height;
+    }
+
+    vk::Extent2D GetExtent() const {
+        return extent;
     }
 
     [[nodiscard]] vk::Semaphore GetImageAcquiredSemaphore() const {
@@ -94,7 +87,6 @@ private:
 private:
     const Instance& instance;
     Scheduler& scheduler;
-    RenderpassCache& renderpass_cache;
     vk::SwapchainKHR swapchain{};
     vk::SurfaceKHR surface{};
     vk::SurfaceFormatKHR surface_format;
@@ -105,6 +97,8 @@ private:
     std::vector<vk::Image> images;
     std::vector<vk::Semaphore> image_acquired;
     std::vector<vk::Semaphore> present_ready;
+    u32 width = 0;
+    u32 height = 0;
     u32 image_count = 0;
     u32 image_index = 0;
     u32 frame_index = 0;

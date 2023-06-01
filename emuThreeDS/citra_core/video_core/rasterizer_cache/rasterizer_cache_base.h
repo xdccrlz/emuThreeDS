@@ -4,18 +4,25 @@
 
 #pragma once
 
-#include <algorithm>
+#include <functional>
 #include <optional>
 #include <unordered_map>
-#include <unordered_set>
+#include <vector>
 #include <boost/icl/interval_map.hpp>
+#include <tsl/robin_map.h>
 #include "video_core/rasterizer_cache/sampler_params.h"
-#include "video_core/rasterizer_cache/surface_params.h"
-#include "video_core/rasterizer_cache/utils.h"
-#include "video_core/texture/texture_decode.h"
+#include "video_core/rasterizer_cache/surface_base.h"
 
 namespace Memory {
 class MemorySystem;
+}
+
+namespace Pica {
+struct Regs;
+}
+
+namespace Pica::Texture {
+struct TextureInfo;
 }
 
 namespace VideoCore {
@@ -27,16 +34,18 @@ enum class ScaleMatch {
 };
 
 enum class MatchFlags {
-    Exact = 1 << 0,   ///< Surface perfectly matches params
-    SubRect = 1 << 1, ///< Surface encompasses params
-    Copy = 1 << 2,    ///< Surface that can be used as a copy source
-    Expand = 1 << 3,  ///< Surface that can expand params
-    TexCopy = 1 << 4  ///< Surface that will match a display transfer "texture copy" parameters
+    Exact = 1 << 0,       ///< Surface perfectly matches params
+    SubRect = 1 << 1,     ///< Surface encompasses params
+    Copy = 1 << 2,        ///< Surface that can be used as a copy source
+    Expand = 1 << 3,      ///< Surface that can expand params
+    TexCopy = 1 << 4,     ///< Surface that will match a display transfer "texture copy" parameters
+    Reinterpret = 1 << 5, ///< Surface might have different pixel format.
 };
 
 DECLARE_ENUM_FLAG_OPERATORS(MatchFlags);
 
 class CustomTexManager;
+class RendererBase;
 
 template <class T>
 class RasterizerCache {
@@ -44,11 +53,10 @@ class RasterizerCache {
     static constexpr u64 CITRA_PAGEBITS = 18;
 
     using Runtime = typename T::Runtime;
-    using Surface = typename T::Surface;
     using Sampler = typename T::Sampler;
+    using Surface = typename T::Surface;
     using Framebuffer = typename T::Framebuffer;
 
-    /// Declare rasterizer interval types
     using SurfaceMap = boost::icl::interval_map<PAddr, SurfaceId, boost::icl::partial_absorber,
                                                 std::less, boost::icl::inplace_plus,
                                                 boost::icl::inter_section, SurfaceInterval>;
@@ -57,19 +65,23 @@ class RasterizerCache {
     using PageMap = boost::icl::interval_map<u32, int>;
 
     struct RenderTargets {
-        SurfaceId color_surface_id;
-        SurfaceId depth_surface_id;
+        SurfaceId color_id;
+        SurfaceId depth_id;
     };
 
-    struct CubeParams {
-        SurfaceId cube_id;
-        std::array<s64, 6> ticks{};
+    struct TextureCube {
+        SurfaceId surface_id;
+        std::array<SurfaceId, 6> face_ids;
+        std::array<u64, 6> ticks;
     };
 
 public:
-    RasterizerCache(Memory::MemorySystem& memory, CustomTexManager& custom_tex_manager,
-                    Runtime& runtime);
+    explicit RasterizerCache(Memory::MemorySystem& memory, CustomTexManager& custom_tex_manager,
+                             Runtime& runtime, Pica::Regs& regs, RendererBase& renderer);
     ~RasterizerCache();
+
+    /// Notify the cache that a new frame has been queued
+    void TickFrame();
 
     /// Perform hardware accelerated texture copy according to the provided configuration
     bool AccelerateTextureCopy(const GPU::Regs::DisplayTransferConfig& config);
@@ -101,7 +113,7 @@ public:
 
     /// Get a surface based on the texture configuration
     Surface& GetTextureSurface(const Pica::TexturingRegs::FullTextureConfig& config);
-    Surface& GetTextureSurface(const Pica::Texture::TextureInfo& info, u32 max_level = 0);
+    SurfaceId GetTextureSurface(const Pica::Texture::TextureInfo& info, u32 max_level = 0);
 
     /// Get a texture cube based on the texture configuration
     Surface& GetTextureCube(const TextureCubeConfig& config);
@@ -110,16 +122,16 @@ public:
     Framebuffer GetFramebufferSurfaces(bool using_color_fb, bool using_depth_fb);
 
     /// Marks the draw rectangle defined in framebuffer as invalid
-    void InvalidateRenderTargets(const Framebuffer& framebuffer);
+    void InvalidateFramebuffer(const Framebuffer& framebuffer);
 
     /// Get a surface that matches a "texture copy" display transfer config
     SurfaceRect_Tuple GetTexCopySurface(const SurfaceParams& params);
 
     /// Write any cached resources overlapping the region back to memory (if dirty)
-    void FlushRegion(PAddr addr, u32 size, SurfaceId flush_surface_id = {});
+    void FlushRegion(PAddr addr, u32 size, SurfaceId flush_surface = {});
 
     /// Mark region as being invalidated by region_owner (nullptr if 3DS memory)
-    void InvalidateRegion(PAddr addr, u32 size, SurfaceId region_owner_id = {});
+    void InvalidateRegion(PAddr addr, u32 size, SurfaceId region_owner = {});
 
     /// Flush all cached resources tracked by this cache manager
     void FlushAll();
@@ -153,18 +165,17 @@ private:
     SurfaceId FindMatch(const SurfaceParams& params, ScaleMatch match_scale_type,
                         std::optional<SurfaceInterval> validate_interval = std::nullopt);
 
-    /// Duplicates src_surface contents to dest_surface
+    /// Transfers ownership of a memory region from src_surface to dest_surface
     void DuplicateSurface(SurfaceId src_id, SurfaceId dst_id);
 
     /// Update surface's texture for given region when necessary
-    void ValidateSurface(SurfaceId surface_id, PAddr addr, u32 size);
+    void ValidateSurface(SurfaceId surface, PAddr addr, u32 size);
 
     /// Copies pixel data in interval from the guest VRAM to the host GPU surface
     void UploadSurface(Surface& surface, SurfaceInterval interval);
 
-    /// Uploads a custom texture associated with upload_data to the target surface
-    bool UploadCustomSurface(Surface& surface, const SurfaceParams& load_info,
-                             std::span<u8> upload_data);
+    /// Uploads a custom texture identified with hash to the target surface
+    bool UploadCustomSurface(SurfaceId surface_id, SurfaceInterval interval);
 
     /// Copies pixel data in interval from the host GPU surface to the guest VRAM
     void DownloadSurface(Surface& surface, SurfaceInterval interval);
@@ -172,25 +183,21 @@ private:
     /// Downloads a fill surface to guest VRAM
     void DownloadFillSurface(Surface& surface, SurfaceInterval interval);
 
-    /// Returns false if there is a surface in the cache at the interval with the same bit-width,
-    bool NoUnimplementedReinterpretations(Surface& surface, SurfaceParams params,
-                                          SurfaceInterval interval);
-
-    /// Return true if a surface with an invalid pixel format exists at the interval
-    bool IntervalHasInvalidPixelFormat(const SurfaceParams params, SurfaceInterval interval);
-
     /// Attempt to find a reinterpretable surface in the cache and use it to copy for validation
     bool ValidateByReinterpretation(Surface& surface, SurfaceParams params,
-                                    SurfaceInterval interval);
+                                    const SurfaceInterval& interval);
+
+    /// Return true if a surface with an invalid pixel format exists at the interval
+    bool IntervalHasInvalidPixelFormat(const SurfaceParams& params, SurfaceInterval interval);
 
     /// Create a new surface
     SurfaceId CreateSurface(const SurfaceParams& params);
 
     /// Register surface into the cache
-    void RegisterSurface(SurfaceId surface_id);
+    void RegisterSurface(SurfaceId surface);
 
     /// Remove surface from the cache
-    void UnregisterSurface(SurfaceId surface_id);
+    void UnregisterSurface(SurfaceId surface);
 
     /// Unregisters all surfaces from the cache
     void UnregisterAll();
@@ -200,25 +207,21 @@ private:
 
 private:
     Memory::MemorySystem& memory;
-    Runtime& runtime;
     CustomTexManager& custom_tex_manager;
-    PageMap cached_pages;
-    SurfaceMap dirty_regions;
-    std::vector<SurfaceId> remove_surfaces;
-    u16 resolution_scale_factor;
-
-    // The internal surface cache is based on buckets of 256KB.
-    // This fits better for the purpose of this cache as textures are normaly
-    // large in size.
-    std::unordered_map<u64, std::vector<SurfaceId>, Common::IdentityHash<u64>> page_table;
+    Runtime& runtime;
+    Pica::Regs& regs;
+    RendererBase& renderer;
+    std::unordered_map<TextureCubeConfig, TextureCube> texture_cube_cache;
+    tsl::robin_pg_map<u64, std::vector<SurfaceId>, Common::IdentityHash<u64>> page_table;
     std::unordered_map<SamplerParams, SamplerId> samplers;
-    std::unordered_map<TextureCubeConfig, CubeParams> texture_cube_cache;
-
-    SlotVector<Surface> slot_surfaces;
-    SlotVector<Sampler> slot_samplers;
+    Common::SlotVector<Surface> slot_surfaces;
+    Common::SlotVector<Sampler> slot_samplers;
+    SurfaceMap dirty_regions;
+    PageMap cached_pages;
+    std::vector<SurfaceId> remove_surfaces;
+    u32 resolution_scale_factor;
     RenderTargets render_targets;
-
-    // Custom textures
+    bool use_filter;
     bool dump_textures;
     bool use_custom_textures;
 };

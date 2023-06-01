@@ -3,7 +3,7 @@
 // Refer to the license.txt file included.
 
 #pragma once
-#include <span>
+
 #include "common/common_types.h"
 #include "common/vector_math.h"
 #include "video_core/regs_texturing.h"

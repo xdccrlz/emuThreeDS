@@ -14,6 +14,7 @@
 #include "common/common_types.h"
 #include "common/file_util.h"
 #include "common/logging/log.h"
+#include "common/scm_rev.h"
 #include "common/string_util.h"
 #include "common/swap.h"
 #include "common/timer.h"
@@ -465,7 +466,7 @@ Movie::ValidationResult Movie::ValidateHeader(const CTMHeader& header) const {
     }
 
     std::string revision = fmt::format("{:02x}", fmt::join(header.revision, ""));
-    if (revision != "1000") { // TODO: this
+    if (revision != Common::g_scm_rev) {
         LOG_WARNING(Movie,
                     "This movie was created on a different version of Citra, playback may desync");
         return ValidationResult::RevisionDismatch;
@@ -502,7 +503,7 @@ void Movie::SaveMovie() {
     header.input_count = GetInputCount(recorded_input);
 
     std::string rev_bytes;
-    CryptoPP::StringSource("1000", true,
+    CryptoPP::StringSource(Common::g_scm_rev, true,
                            new CryptoPP::HexDecoder(new CryptoPP::StringSink(rev_bytes)));
     std::memcpy(header.revision.data(), rev_bytes.data(), sizeof(CTMHeader::revision));
 

@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -17,7 +17,8 @@ class EmuWindow;
 
 namespace VideoCore {
 class CustomTexManager;
-}
+class RendererBase;
+} // namespace VideoCore
 
 namespace Vulkan {
 
@@ -34,11 +35,13 @@ class RasterizerVulkan : public VideoCore::RasterizerAccelerated {
 public:
     explicit RasterizerVulkan(Memory::MemorySystem& memory,
                               VideoCore::CustomTexManager& custom_tex_manager,
-                              Frontend::EmuWindow& emu_window, const Instance& instance,
-                              Scheduler& scheduler, DescriptorManager& desc_manager,
-                              TextureRuntime& runtime, RenderpassCache& renderpass_cache);
+                              VideoCore::RendererBase& renderer, Frontend::EmuWindow& emu_window,
+                              const Instance& instance, Scheduler& scheduler,
+                              DescriptorManager& desc_manager, TextureRuntime& runtime,
+                              RenderpassCache& renderpass_cache);
     ~RasterizerVulkan() override;
 
+    void TickFrame();
     void LoadDiskResources(const std::atomic_bool& stop_loading,
                            const VideoCore::DiskResourceLoadCallback& callback) override;
 
@@ -110,6 +113,9 @@ private:
     bool IsFeedbackLoop(u32 texture_index, const Framebuffer& framebuffer, Surface& surface,
                         Sampler& sampler);
 
+    /// Unbinds all special texture unit 0 texture configurations
+    void UnbindSpecial();
+
     /// Upload the uniform blocks to the uniform buffer object
     void UploadUniforms(bool accelerate_draw);
 
@@ -150,10 +156,11 @@ private:
     std::array<u32, 16> binding_offsets{};
     std::array<bool, 16> enable_attributes{};
     std::array<vk::Buffer, 16> vertex_buffers;
+    VertexArrayInfo vertex_info;
     PipelineInfo pipeline_info;
 
     StreamBuffer stream_buffer;     ///< Vertex+Index buffer
-    StreamBuffer uniform_buffer;    /// Uniform buffer
+    StreamBuffer uniform_buffer;    ///< Uniform buffer
     StreamBuffer texture_buffer;    ///< Texture buffer
     StreamBuffer texture_lf_buffer; ///< Texture Light-Fog buffer
     vk::BufferView texture_lf_view;

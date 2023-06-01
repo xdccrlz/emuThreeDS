@@ -1,20 +1,50 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
 #pragma once
 
-#include <memory>
 #include <boost/icl/interval_set.hpp>
 #include "video_core/rasterizer_cache/surface_params.h"
+#include "video_core/rasterizer_cache/utils.h"
 
 namespace VideoCore {
 
 using SurfaceRegions = boost::icl::interval_set<PAddr, std::less, SurfaceInterval>;
 
+struct Material;
+
+enum class SurfaceFlagBits : u32 {
+    Registered = 1 << 0, ///< Surface is registed in the rasterizer cache.
+    Picked = 1 << 1,     ///< Surface has been picked when searching for a match.
+    Tracked = 1 << 2,    ///< Surface is part of a texture cube and should be tracked.
+    Custom = 1 << 3,     ///< Surface texture has been replaced with a custom texture.
+    ShadowMap = 1 << 4,  ///< Surface is used during shadow rendering.
+};
+DECLARE_ENUM_FLAG_OPERATORS(SurfaceFlagBits);
+
 class SurfaceBase : public SurfaceParams {
 public:
-    explicit SurfaceBase(const SurfaceParams& params);
+    SurfaceBase(const SurfaceParams& params);
+    ~SurfaceBase();
+
+    /// Returns true when this surface can be used to fill the fill_interval of dest_surface
+    bool CanFill(const SurfaceParams& dest_surface, SurfaceInterval fill_interval) const;
+
+    /// Returns true when surface can validate copy_interval of dest_surface
+    bool CanCopy(const SurfaceParams& dest_surface, SurfaceInterval copy_interval) const;
+
+    /// Returns the region of the biggest valid rectange within interval
+    SurfaceInterval GetCopyableInterval(const SurfaceParams& params) const;
+
+    /// Returns the clear value used to validate another surface from this fill surface
+    ClearValue MakeClearValue(PAddr copy_addr, PixelFormat dst_format);
+
+    /// Returns the internal surface extent.
+    Extent RealExtent(bool scaled = true);
+
+    /// Returns true if the surface contains a custom material with a normal map.
+    bool HasNormalMap() const noexcept;
 
     bool Overlaps(PAddr overlap_addr, size_t overlap_size) const noexcept {
         const PAddr overlap_end = overlap_addr + static_cast<PAddr>(overlap_size);
@@ -25,16 +55,12 @@ public:
         return modification_tick;
     }
 
-    CustomPixelFormat CustomFormat() const noexcept {
-        return custom_format;
-    }
-
     bool IsCustom() const noexcept {
-        return is_custom;
+        return True(flags & SurfaceFlagBits::Custom) && custom_format != CustomPixelFormat::Invalid;
     }
 
     bool IsRegionValid(SurfaceInterval interval) const {
-        return (invalid_regions.find(interval) == invalid_regions.end());
+        return invalid_regions.find(interval) == invalid_regions.end();
     }
 
     void MarkValid(SurfaceInterval interval) {
@@ -52,30 +78,16 @@ public:
         return *invalid_regions.equal_range(interval).first == interval;
     }
 
-    /// Returns true when this surface can be used to fill the fill_interval of dest_surface
-    bool CanFill(const SurfaceParams& dest_surface, SurfaceInterval fill_interval) const;
-
-    /// Returns true when surface can validate copy_interval of dest_surface
-    bool CanCopy(const SurfaceParams& dest_surface, SurfaceInterval copy_interval) const;
-
-    /// Returns the region of the biggest valid rectange within interval
-    SurfaceInterval GetCopyableInterval(const SurfaceParams& params) const;
-
-    /// Returns the clear value used to validate another surface from this fill surface
-    ClearValue MakeClearValue(PAddr copy_addr, PixelFormat dst_format);
-
 private:
     /// Returns the fill buffer value starting from copy_addr
     std::array<u8, 4> MakeFillBuffer(PAddr copy_addr);
 
 public:
-    bool registered = false;
-    bool picked = false;
-    bool is_custom = false;
-    CustomPixelFormat custom_format{};
+    SurfaceFlagBits flags{};
+    const Material* material = nullptr;
     SurfaceRegions invalid_regions;
-    std::array<u8, 4> fill_data;
     u32 fill_size = 0;
+    std::array<u8, 4> fill_data;
     u64 modification_tick = 1;
 };
 

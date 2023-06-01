@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -47,27 +47,6 @@ std::string_view PixelFormatAsString(PixelFormat format) {
     }
 }
 
-std::string_view CustomPixelFormatAsString(CustomPixelFormat format) {
-    switch (format) {
-    case CustomPixelFormat::RGBA8:
-        return "RGBA8";
-    case CustomPixelFormat::BC1:
-        return "BC1";
-    case CustomPixelFormat::BC3:
-        return "BC3";
-    case CustomPixelFormat::BC5:
-        return "BC5";
-    case CustomPixelFormat::BC7:
-        return "BC7";
-    case CustomPixelFormat::ASTC4:
-        return "ASTC4";
-    case CustomPixelFormat::ASTC6:
-        return "ASTC6";
-    case CustomPixelFormat::ASTC8:
-        return "ASTC8";
-    }
-}
-
 bool CheckFormatsBlittable(PixelFormat source_format, PixelFormat dest_format) {
     SurfaceType source_type = GetFormatType(source_format);
     SurfaceType dest_type = GetFormatType(dest_format);
@@ -91,30 +70,84 @@ bool CheckFormatsBlittable(PixelFormat source_format, PixelFormat dest_format) {
 }
 
 PixelFormat PixelFormatFromTextureFormat(Pica::TexturingRegs::TextureFormat format) {
-    const u32 format_index = static_cast<u32>(format);
-    return (format_index < 14) ? static_cast<PixelFormat>(format) : PixelFormat::Invalid;
+    switch (format) {
+    case Pica::TexturingRegs::TextureFormat::RGBA8:
+        return PixelFormat::RGBA8;
+    case Pica::TexturingRegs::TextureFormat::RGB8:
+        return PixelFormat::RGB8;
+    case Pica::TexturingRegs::TextureFormat::RGB5A1:
+        return PixelFormat::RGB5A1;
+    case Pica::TexturingRegs::TextureFormat::RGB565:
+        return PixelFormat::RGB565;
+    case Pica::TexturingRegs::TextureFormat::RGBA4:
+        return PixelFormat::RGBA4;
+    case Pica::TexturingRegs::TextureFormat::IA8:
+        return PixelFormat::IA8;
+    case Pica::TexturingRegs::TextureFormat::RG8:
+        return PixelFormat::RG8;
+    case Pica::TexturingRegs::TextureFormat::I8:
+        return PixelFormat::I8;
+    case Pica::TexturingRegs::TextureFormat::A8:
+        return PixelFormat::A8;
+    case Pica::TexturingRegs::TextureFormat::IA4:
+        return PixelFormat::IA4;
+    case Pica::TexturingRegs::TextureFormat::I4:
+        return PixelFormat::I4;
+    case Pica::TexturingRegs::TextureFormat::A4:
+        return PixelFormat::A4;
+    case Pica::TexturingRegs::TextureFormat::ETC1:
+        return PixelFormat::ETC1;
+    case Pica::TexturingRegs::TextureFormat::ETC1A4:
+        return PixelFormat::ETC1A4;
+    default:
+        return PixelFormat::Invalid;
+    }
 }
 
 PixelFormat PixelFormatFromColorFormat(Pica::FramebufferRegs::ColorFormat format) {
-    const u32 format_index = static_cast<u32>(format);
-    return (format_index < 5) ? static_cast<PixelFormat>(format) : PixelFormat::Invalid;
+    switch (format) {
+    case Pica::FramebufferRegs::ColorFormat::RGBA8:
+        return PixelFormat::RGBA8;
+    case Pica::FramebufferRegs::ColorFormat::RGB8:
+        return PixelFormat::RGB8;
+    case Pica::FramebufferRegs::ColorFormat::RGB5A1:
+        return PixelFormat::RGB5A1;
+    case Pica::FramebufferRegs::ColorFormat::RGB565:
+        return PixelFormat::RGB565;
+    case Pica::FramebufferRegs::ColorFormat::RGBA4:
+        return PixelFormat::RGBA4;
+    default:
+        return PixelFormat::Invalid;
+    }
 }
 
 PixelFormat PixelFormatFromDepthFormat(Pica::FramebufferRegs::DepthFormat format) {
-    const u32 format_index = static_cast<u32>(format);
-    return (format_index < 4) ? static_cast<PixelFormat>(format_index + 14) : PixelFormat::Invalid;
+    switch (format) {
+    case Pica::FramebufferRegs::DepthFormat::D16:
+        return PixelFormat::D16;
+    case Pica::FramebufferRegs::DepthFormat::D24:
+        return PixelFormat::D24;
+    case Pica::FramebufferRegs::DepthFormat::D24S8:
+        return PixelFormat::D24S8;
+    default:
+        return PixelFormat::Invalid;
+    }
 }
 
 PixelFormat PixelFormatFromGPUPixelFormat(GPU::Regs::PixelFormat format) {
-    const u32 format_index = static_cast<u32>(format);
     switch (format) {
-    // RGB565 and RGB5A1 are switched in PixelFormat compared to ColorFormat
+    case GPU::Regs::PixelFormat::RGBA8:
+        return PixelFormat::RGBA8;
+    case GPU::Regs::PixelFormat::RGB8:
+        return PixelFormat::RGB8;
     case GPU::Regs::PixelFormat::RGB565:
         return PixelFormat::RGB565;
     case GPU::Regs::PixelFormat::RGB5A1:
         return PixelFormat::RGB5A1;
+    case GPU::Regs::PixelFormat::RGBA4:
+        return PixelFormat::RGBA4;
     default:
-        return (format_index < 5) ? static_cast<PixelFormat>(format) : PixelFormat::Invalid;
+        return PixelFormat::Invalid;
     }
 }
 

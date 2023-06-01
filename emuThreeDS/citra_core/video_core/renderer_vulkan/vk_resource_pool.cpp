@@ -1,5 +1,6 @@
-// SPDX-FileCopyrightText: Copyright 2020 yuzu Emulator Project
-// SPDX-License-Identifier: GPL-2.0-or-later
+// Copyright 2020 yuzu Emulator Project
+// Licensed under GPLv2 or any later version
+// Refer to the license.txt file included.
 
 #include <cstddef>
 #include <optional>
@@ -9,8 +10,8 @@
 
 namespace Vulkan {
 
-ResourcePool::ResourcePool(MasterSemaphore& master_semaphore_, size_t grow_step_)
-    : master_semaphore{&master_semaphore_}, grow_step{grow_step_} {}
+ResourcePool::ResourcePool(MasterSemaphore* master_semaphore_, size_t grow_step_)
+    : master_semaphore{master_semaphore_}, grow_step{grow_step_} {}
 
 std::size_t ResourcePool::CommitResource() {
     // Refresh semaphore to query updated results
@@ -68,7 +69,7 @@ struct CommandPool::Pool {
     std::array<vk::CommandBuffer, COMMAND_BUFFER_POOL_SIZE> cmdbufs;
 };
 
-CommandPool::CommandPool(const Instance& instance, MasterSemaphore& master_semaphore)
+CommandPool::CommandPool(const Instance& instance, MasterSemaphore* master_semaphore)
     : ResourcePool{master_semaphore, COMMAND_BUFFER_POOL_SIZE}, instance{instance} {}
 
 CommandPool::~CommandPool() {
@@ -109,7 +110,7 @@ vk::CommandBuffer CommandPool::Commit() {
     return pools[pool_index].cmdbufs[sub_index];
 }
 
-DescriptorPool::DescriptorPool(const Instance& instance, MasterSemaphore& master_semaphore)
+DescriptorPool::DescriptorPool(const Instance& instance, MasterSemaphore* master_semaphore)
     : ResourcePool{master_semaphore, 1}, instance{instance} {}
 
 DescriptorPool::~DescriptorPool() {
@@ -128,12 +129,13 @@ void DescriptorPool::Allocate(std::size_t begin, std::size_t end) {
     vk::DescriptorPool& pool = pools.emplace_back();
 
     // Choose a sane pool size good for most games
-    static constexpr std::array<vk::DescriptorPoolSize, 5> pool_sizes = {{
+    static constexpr std::array<vk::DescriptorPoolSize, 6> pool_sizes = {{
         {vk::DescriptorType::eUniformBufferDynamic, 32},
         {vk::DescriptorType::eUniformTexelBuffer, 32},
         {vk::DescriptorType::eCombinedImageSampler, 8192},
         {vk::DescriptorType::eSampledImage, 1024},
         {vk::DescriptorType::eStorageImage, 1024},
+        {vk::DescriptorType::eStorageBuffer, 512},
     }};
 
     const vk::DescriptorPoolCreateInfo descriptor_pool_info = {

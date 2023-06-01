@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include <concepts>
 #include <cstddef>
 #include <cstring>
 #include "common/cityhash.h"
@@ -44,7 +43,7 @@ inline u64 HashCombine(std::size_t seed, const u64 hash) {
 
 template <typename T>
 struct IdentityHash {
-    T operator()(const T& value) const {
+    std::size_t operator()(const T& value) const {
         return value;
     }
 };

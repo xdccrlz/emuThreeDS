@@ -9,7 +9,7 @@
 namespace HostShaders {
 
 constexpr std::string_view BICUBIC_FRAG = {
-"// Copyright 2022 Citra Emulator Project\n"
+"// Copyright 2023 Citra Emulator Project\n"
 "// Licensed under GPLv2 or any later version\n"
 "// Refer to the license.txt file included.\n"
 "\n"
@@ -33,7 +33,6 @@ constexpr std::string_view BICUBIC_FRAG = {
 "}\n"
 "\n"
 "vec4 textureBicubic(sampler2D tex_sampler, vec2 texCoords) {\n"
-"\n"
 "    vec2 texSize = vec2(textureSize(tex_sampler, 0));\n"
 "    vec2 invTexSize = 1.0 / texSize;\n"
 "\n"

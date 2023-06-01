@@ -1,4 +1,4 @@
-// Copyright 2022 Citra Emulator Project
+// Copyright 2023 Citra Emulator Project
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included.
 
@@ -8,20 +8,20 @@
 #include "common/microprofile.h"
 #include "common/settings.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
-#include "video_core/renderer_vulkan/vk_renderpass_cache.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_swapchain.h"
 
+MICROPROFILE_DEFINE(Vulkan_Acquire, "Vulkan", "Swapchain Acquire", MP_RGB(185, 66, 245));
+MICROPROFILE_DEFINE(Vulkan_Present, "Vulkan", "Swapchain Present", MP_RGB(66, 185, 245));
+
 namespace Vulkan {
 
-Swapchain::Swapchain(const Instance& instance, Scheduler& scheduler,
-                     RenderpassCache& renderpass_cache)
-    : instance{instance}, scheduler{scheduler},
-      renderpass_cache{renderpass_cache}, surface{instance.GetSurface()} {
+Swapchain::Swapchain(const Instance& instance_, Scheduler& scheduler, u32 width, u32 height,
+                     vk::SurfaceKHR surface_)
+    : instance{instance_}, scheduler{scheduler}, surface{surface_} {
     FindPresentFormat();
     SetPresentMode();
-    renderpass_cache.CreatePresentRenderpass(surface_format.format);
-    Create();
+    Create(width, height, surface);
 }
 
 Swapchain::~Swapchain() {
@@ -29,14 +29,13 @@ Swapchain::~Swapchain() {
     instance.GetInstance().destroySurfaceKHR(surface);
 }
 
-void Swapchain::Create(vk::SurfaceKHR new_surface) {
-    needs_recreation = true; ///< Set this for the present thread to wait on
-    Destroy();
+void Swapchain::Create(u32 width_, u32 height_, vk::SurfaceKHR surface_) {
+    width = width_;
+    height = height_;
+    surface = surface_;
+    needs_recreation = false;
 
-    if (new_surface) {
-        instance.GetInstance().destroySurfaceKHR(surface);
-        surface = new_surface;
-    }
+    Destroy();
 
     SetPresentMode();
     SetSurfaceProperties();
@@ -78,10 +77,8 @@ void Swapchain::Create(vk::SurfaceKHR new_surface) {
 
     SetupImages();
     RefreshSemaphores();
-    needs_recreation = false;
 }
 
-MICROPROFILE_DEFINE(Vulkan_Acquire, "Vulkan", "Swapchain Acquire", MP_RGB(185, 66, 245));
 bool Swapchain::AcquireNextImage() {
     MICROPROFILE_SCOPE(Vulkan_Acquire);
     vk::Device device = instance.GetDevice();
@@ -93,20 +90,18 @@ bool Swapchain::AcquireNextImage() {
     case vk::Result::eSuccess:
         break;
     case vk::Result::eSuboptimalKHR:
-        needs_recreation = true;
-        break;
     case vk::Result::eErrorOutOfDateKHR:
         needs_recreation = true;
         break;
     default:
-        ASSERT_MSG(false, "vkAcquireNextImageKHR returned unknown result {}", result);
+        LOG_CRITICAL(Render_Vulkan, "Swapchain acquire returned unknown result {}", result);
+        UNREACHABLE();
         break;
     }
 
     return !needs_recreation;
 }
 
-MICROPROFILE_DEFINE(Vulkan_Present, "Vulkan", "Swapchain Present", MP_RGB(66, 185, 245));
 void Swapchain::Present() {
     if (needs_recreation) {
         return;
@@ -122,7 +117,6 @@ void Swapchain::Present() {
 
     MICROPROFILE_SCOPE(Vulkan_Present);
     try {
-        std::scoped_lock lock{scheduler.QueueMutex()};
         [[maybe_unused]] vk::Result result = instance.GetPresentQueue().presentKHR(present_info);
     } catch (vk::OutOfDateKHRError&) {
         needs_recreation = true;
@@ -135,11 +129,10 @@ void Swapchain::Present() {
 }
 
 void Swapchain::FindPresentFormat() {
-    const std::vector<vk::SurfaceFormatKHR> formats =
-        instance.GetPhysicalDevice().getSurfaceFormatsKHR(surface);
+    const auto formats = instance.GetPhysicalDevice().getSurfaceFormatsKHR(surface);
 
     // If there is a single undefined surface format, the device doesn't care, so we'll just use
-    // RGBA
+    // RGBA.
     if (formats[0].format == vk::Format::eUndefined) {
         surface_format.format = vk::Format::eR8G8B8A8Unorm;
         surface_format.colorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
@@ -165,10 +158,8 @@ void Swapchain::FindPresentFormat() {
 void Swapchain::SetPresentMode() {
     present_mode = vk::PresentModeKHR::eFifo;
     if (!Settings::values.use_vsync_new) {
-        const std::vector<vk::PresentModeKHR> modes =
-            instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
-
-        const auto FindMode = [&modes](vk::PresentModeKHR requested) {
+        const auto modes = instance.GetPhysicalDevice().getSurfacePresentModesKHR(surface);
+        const auto find_mode = [&modes](vk::PresentModeKHR requested) {
             auto it =
                 std::find_if(modes.begin(), modes.end(),
                              [&requested](vk::PresentModeKHR mode) { return mode == requested; });
@@ -176,15 +167,9 @@ void Swapchain::SetPresentMode() {
             return it != modes.end();
         };
 
-        // Prefer immediate when vsync is disabled for fastest acquire
-        if (FindMode(vk::PresentModeKHR::eImmediate)) {
-            present_mode = vk::PresentModeKHR::eImmediate;
-        } else if (FindMode(vk::PresentModeKHR::eMailbox)) {
-            present_mode = vk::PresentModeKHR::eMailbox;
-        }
+        const bool has_mailbox = find_mode(vk::PresentModeKHR::eMailbox);
+        present_mode = has_mailbox ? vk::PresentModeKHR::eMailbox : vk::PresentModeKHR::eImmediate;
     }
-
-    LOG_INFO(Render_Vulkan, "Using {} present mode", vk::to_string(present_mode));
 }
 
 void Swapchain::SetSurfaceProperties() {
@@ -193,19 +178,17 @@ void Swapchain::SetSurfaceProperties() {
 
     extent = capabilities.currentExtent;
     if (capabilities.currentExtent.width == std::numeric_limits<u32>::max()) {
-        LOG_CRITICAL(Render_Vulkan, "Device reported no surface extent");
-        UNREACHABLE();
+        extent.width = std::max(capabilities.minImageExtent.width,
+                                std::min(capabilities.maxImageExtent.width, width));
+        extent.height = std::max(capabilities.minImageExtent.height,
+                                 std::min(capabilities.maxImageExtent.height, height));
     }
-
-    LOG_INFO(Render_Vulkan, "Creating {}x{} surface", extent.width, extent.height);
 
     // Select number of images in swap chain, we prefer one buffer in the background to work on
     image_count = capabilities.minImageCount + 1;
     if (capabilities.maxImageCount > 0) {
         image_count = std::min(image_count, capabilities.maxImageCount);
     }
-
-    LOG_INFO(Render_Vulkan, "Requesting {} images", image_count);
 
     // Prefer identity transform if possible
     transform = vk::SurfaceTransformFlagBitsKHR::eIdentity;
@@ -225,16 +208,12 @@ void Swapchain::Destroy() {
     if (swapchain) {
         device.destroySwapchainKHR(swapchain);
     }
-
-    const auto Clear = [&](auto& vec) {
-        for (const auto item : vec) {
-            device.destroy(item);
-        }
-        vec.clear();
-    };
-
-    Clear(image_acquired);
-    Clear(present_ready);
+    for (u32 i = 0; i < image_count; i++) {
+        device.destroySemaphore(image_acquired[i]);
+        device.destroySemaphore(present_ready[i]);
+    }
+    image_acquired.clear();
+    present_ready.clear();
 }
 
 void Swapchain::RefreshSemaphores() {
@@ -254,7 +233,6 @@ void Swapchain::SetupImages() {
     vk::Device device = instance.GetDevice();
     images = device.getSwapchainImagesKHR(swapchain);
     image_count = static_cast<u32>(images.size());
-    LOG_INFO(Render_Vulkan, "Using {} images", image_count);
 }
 
 } // namespace Vulkan

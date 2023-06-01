@@ -40,8 +40,8 @@
 
 #else
 #ifdef __APPLE__
+#include "DirectoryManager.h"
 #include <sys/param.h>
-#include "filehandle.h"
 #endif
 #include <cctype>
 #include <cerrno>
@@ -725,10 +725,10 @@ static const std::string GetUserDirectory(const std::string& envvar) {
 std::string GetSysDirectory() {
     std::string sysDir;
 
-    LOG_INFO(Common_Filesystem, "bundle = {}, document = {}", GetBundleDirectory(), FolderHandle::DocumentDirectory());
+    LOG_INFO(Common_Filesystem, "bundle = {}, document = {}", GetBundleDirectory(), DirectoryManager::DocumentDirectory());
     
 #if defined(__APPLE__)
-    sysDir = FolderHandle::DocumentDirectory(); // GetBundleDirectory();
+    sysDir = DirectoryManager::DocumentDirectory(); // GetBundleDirectory();
     sysDir += DIR_SEP;
     sysDir += SYSDATA_DIR;
 #else
@@ -785,7 +785,7 @@ void SetUserPath(const std::string& path) {
             // paths.
             if (!FileUtil::Exists(data_dir) && !FileUtil::Exists(config_dir) &&
                 !FileUtil::Exists(cache_dir)) {
-                data_dir = FolderHandle::DocumentDirectory() + DIR_SEP;
+                data_dir = DirectoryManager::DocumentDirectory() + DIR_SEP;
                 config_dir = data_dir + CONFIG_DIR DIR_SEP;
                 cache_dir = data_dir + CACHE_DIR DIR_SEP;
             }

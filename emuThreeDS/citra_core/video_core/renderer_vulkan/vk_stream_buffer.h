@@ -10,8 +10,6 @@
 #include <vector>
 #include "video_core/renderer_vulkan/vk_common.h"
 
-VK_DEFINE_HANDLE(VmaAllocation)
-
 namespace Vulkan {
 
 enum class BufferType : u32 {
@@ -46,10 +44,6 @@ public:
         return buffer;
     }
 
-    u64 Address() const noexcept {
-        return 0;
-    }
-
 private:
     struct Watch {
         u64 tick{};
@@ -68,15 +62,17 @@ private:
     const Instance& instance; ///< Vulkan instance.
     Scheduler& scheduler;     ///< Command scheduler.
 
+    vk::Device device;
     vk::Buffer buffer;        ///< Mapped buffer.
-    VmaAllocation allocation; ///< VMA allocation
+    vk::DeviceMemory memory;  ///< Memory allocation.
     u8* mapped{};             ///< Pointer to the mapped memory
     u64 stream_buffer_size{}; ///< Stream buffer size.
     vk::BufferUsageFlags usage{};
     BufferType type;
 
-    u64 offset{};      ///< Buffer iterator.
-    u64 mapped_size{}; ///< Size reserved for the current copy.
+    u64 offset{};       ///< Buffer iterator.
+    u64 mapped_size{};  ///< Size reserved for the current copy.
+    bool is_coherent{}; ///< True if the buffer is coherent
 
     std::vector<Watch> current_watches;           ///< Watches recorded in the current iteration.
     std::size_t current_watch_cursor{};           ///< Count of watches, reset on invalidation.

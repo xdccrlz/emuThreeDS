@@ -9,7 +9,7 @@
 namespace HostShaders {
 
 constexpr std::string_view NEAREST_NEIGHBOR_FRAG = {
-"// Copyright 2022 Citra Emulator Project\n"
+"// Copyright 2023 Citra Emulator Project\n"
 "// Licensed under GPLv2 or any later version\n"
 "// Refer to the license.txt file included.\n"
 "\n"
@@ -19,7 +19,7 @@ constexpr std::string_view NEAREST_NEIGHBOR_FRAG = {
 "layout(location = 0) in vec2 tex_coord;\n"
 "layout(location = 0) out vec4 frag_color;\n"
 "\n"
-"layout(binding = 0) uniform sampler2D input_texture;\n"
+"layout(binding = 2) uniform sampler2D input_texture;\n"
 "\n"
 "void main() {\n"
 "    frag_color = texture(input_texture, tex_coord);\n"
