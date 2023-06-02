@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## WIP
+## [1.0.6.3] - Unknown
+### Added
+#### Controller
+- Added L, R, Select, Start and C-Stick
+
+#### Settings
+- Added CPU Clock, Use New 3DS, Asynchronous Shaders, Asynchronous Presentation and Enable HW Shaders
+
+### Changed
+- Removed 0x resolution multiplier and improved formatting of resolutions
+
+## [1.0.6.2] - 1st June 2023
+Unable to remember changes (was not many iirc)
+
 ## [1.0.6.1] - 29th May 2023
 ### Added
 - Built XCFrameworks for 90% of all external libraries
