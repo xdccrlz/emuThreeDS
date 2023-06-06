@@ -8,6 +8,7 @@
 import Foundation
 import GameController
 import MetalKit
+import SwiftUI
 import UIKit
 
 class EmulationViewController : UIViewController {
@@ -15,7 +16,7 @@ class EmulationViewController : UIViewController {
     
     var metalView = MTKView()
     
-    var virtualController = SuperController(elements: [GCInputLeftThumbstick, GCInputLeftShoulder, GCInputRightShoulder, GCInputButtonMenu, GCInputButtonOptions, GCInputButtonA, GCInputButtonB, GCInputButtonX, GCInputButtonY])
+    var virtualController = SuperController(elements: [GCInputLeftThumbstick, GCInputRightThumbstick, GCInputLeftShoulder, GCInputRightShoulder, GCInputLeftTrigger, GCInputRightTrigger, GCInputButtonA, GCInputButtonB, GCInputButtonX, GCInputButtonY])
     
     init(emulationManager: EmulationManager) {
         self.emulationManager = emulationManager
@@ -41,6 +42,7 @@ class EmulationViewController : UIViewController {
         ])
         
         NotificationCenter.default.addObserver(self, selector: #selector(controllerDidConnect), name: NSNotification.Name.GCControllerDidConnect, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(controllerDidConnect), name: NSNotification.Name.GCControllerDidDisconnect, object: nil)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -61,7 +63,7 @@ class EmulationViewController : UIViewController {
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        if emulationManager.hasConfigured {
+        if emulationManager.hasConfigured, emulationManager.wrapper.isRunning {
             emulationManager.orientationChanged(orientation: UIDevice.current.orientation, with: metalView.layer as! CAMetalLayer)
         }
         disconnect(); connect()
@@ -104,16 +106,42 @@ class EmulationViewController : UIViewController {
     
     
     @objc func controllerDidConnect() {
-        print("controller connected")
-        
-        virtualController.handleA = EmulationInput.buttonA.valueChangedHandler
-        virtualController.handleB = EmulationInput.buttonB.valueChangedHandler
-        virtualController.handleX = EmulationInput.buttonX.valueChangedHandler
-        virtualController.handleY = EmulationInput.buttonY.valueChangedHandler
-        
-        virtualController.handleOptions = EmulationInput.buttonSelect.valueChangedHandler
-        virtualController.handleOptions = EmulationInput.buttonSelect.valueChangedHandler
-        
-        virtualController.handleThumbstick = EmulationInput.circlePad.valueChangedHandler
+        if let controller = GCController.controllers().first(where: { $0.battery != nil }) {
+            if let _ = controller.battery {
+                virtualController.disconnect()
+                
+                controller.extendedGamepad?.buttonA.pressedChangedHandler = EmulationInput.buttonA.valueChangedHandler
+                controller.extendedGamepad?.buttonB.pressedChangedHandler = EmulationInput.buttonB.valueChangedHandler
+                controller.extendedGamepad?.buttonX.pressedChangedHandler = EmulationInput.buttonX.valueChangedHandler
+                controller.extendedGamepad?.buttonY.pressedChangedHandler = EmulationInput.buttonY.valueChangedHandler
+                
+                controller.extendedGamepad?.leftShoulder.pressedChangedHandler = EmulationInput.buttonSelect.valueChangedHandler
+                controller.extendedGamepad?.rightShoulder.pressedChangedHandler = EmulationInput.buttonStart.valueChangedHandler
+                
+                controller.extendedGamepad?.leftTrigger.valueChangedHandler = EmulationInput.buttonL.valueChangedHandler
+                controller.extendedGamepad?.rightTrigger.valueChangedHandler = EmulationInput.buttonR.valueChangedHandler
+                
+                controller.extendedGamepad?.leftThumbstick.valueChangedHandler = EmulationInput.circlePad.valueChangedHandler
+                controller.extendedGamepad?.rightThumbstick.valueChangedHandler = EmulationInput.circlePadPro.valueChangedHandler
+            } else {
+                Task {
+                    try await virtualController.connect()
+                }
+                
+                virtualController.handleA = EmulationInput.buttonA.valueChangedHandler
+                virtualController.handleB = EmulationInput.buttonB.valueChangedHandler
+                virtualController.handleX = EmulationInput.buttonX.valueChangedHandler
+                virtualController.handleY = EmulationInput.buttonY.valueChangedHandler
+                
+                virtualController.handleLeftShoulder = EmulationInput.buttonSelect.valueChangedHandler
+                virtualController.handleRightShoulder = EmulationInput.buttonStart.valueChangedHandler
+                
+                virtualController.handleLeftTrigger = EmulationInput.buttonL.valueChangedHandler
+                virtualController.handleRightTrigger = EmulationInput.buttonR.valueChangedHandler
+                
+                virtualController.handleLeftThumbstick = EmulationInput.circlePad.valueChangedHandler
+                virtualController.handleRightThumbstick = EmulationInput.circlePadPro.valueChangedHandler
+            }
+        }
     }
 }

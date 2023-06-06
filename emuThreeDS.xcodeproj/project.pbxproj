@@ -623,6 +623,9 @@
 		C17FAB8B2A1B74380020FF0B /* CitraWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */; };
 		C17FAB8D2A1B74AD0020FF0B /* EmulationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */; };
 		C17FAB8F2A1B74BD0020FF0B /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */; };
+		C17FFB632A28498C0035B362 /* LayoutOptionsSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB622A28498C0035B362 /* LayoutOptionsSettingView.swift */; };
+		C17FFB652A284A0F0035B362 /* ResolutionFactorSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB642A284A0F0035B362 /* ResolutionFactorSettingView.swift */; };
+		C17FFB672A284E6E0035B362 /* CPUClockSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB662A284E6E0035B362 /* CPUClockSettingView.swift */; };
 		C1A3E21D2A1F139300440F83 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E21C2A1F139300440F83 /* SettingsView.swift */; };
 		C1A3E2242A1F1DCC00440F83 /* LibraryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */; };
 		C1A3E22C2A1F2B3600440F83 /* DirectoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */; };
@@ -1270,6 +1273,9 @@
 		C17FAB8A2A1B74380020FF0B /* CitraWrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CitraWrapper.mm; sourceTree = "<group>"; };
 		C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulationView.swift; sourceTree = "<group>"; };
 		C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
+		C17FFB622A28498C0035B362 /* LayoutOptionsSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutOptionsSettingView.swift; sourceTree = "<group>"; };
+		C17FFB642A284A0F0035B362 /* ResolutionFactorSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResolutionFactorSettingView.swift; sourceTree = "<group>"; };
+		C17FFB662A284E6E0035B362 /* CPUClockSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUClockSettingView.swift; sourceTree = "<group>"; };
 		C1A3E21C2A1F139300440F83 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C1A3E2222A1F1DBF00440F83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryManager.swift; sourceTree = "<group>"; };
@@ -1344,6 +1350,7 @@
 		C122F1D82A21C56700EB2F2F /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				C17FFB612A2849740035B362 /* Settings */,
 				C15DC0CC2A1B40C00053B8EA /* ContentView.swift */,
 				C17FAB8C2A1B74AD0020FF0B /* EmulationView.swift */,
 				C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */,
@@ -2657,6 +2664,16 @@
 			path = citra_wrapper;
 			sourceTree = "<group>";
 		};
+		C17FFB612A2849740035B362 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				C17FFB662A284E6E0035B362 /* CPUClockSettingView.swift */,
+				C17FFB622A28498C0035B362 /* LayoutOptionsSettingView.swift */,
+				C17FFB642A284A0F0035B362 /* ResolutionFactorSettingView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -2689,7 +2706,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1500;
 				TargetAttributes = {
 					C15DC0C62A1B40C00053B8EA = {
 						CreatedOnToolsVersion = 14.3;
@@ -2764,6 +2781,7 @@
 				C15E08F62A1B5D9700D70564 /* serpent.cpp in Sources */,
 				C15E097E2A1B5D9700D70564 /* chachapoly.cpp in Sources */,
 				C15E096E2A1B5D9700D70564 /* validat9.cpp in Sources */,
+				C17FFB652A284A0F0035B362 /* ResolutionFactorSettingView.swift in Sources */,
 				C15DC4CC2A1B438B0053B8EA /* vfpdouble.cpp in Sources */,
 				C15DC5A22A1B46380053B8EA /* regs.cpp in Sources */,
 				C15DC41D2A1B438B0053B8EA /* am.cpp in Sources */,
@@ -3092,6 +3110,7 @@
 				C15E097A2A1B5D9700D70564 /* speck128_simd.cpp in Sources */,
 				C15DC5C32A1B46380053B8EA /* vertex_loader.cpp in Sources */,
 				C15E08DE2A1B5D9700D70564 /* power9_ppc.cpp in Sources */,
+				C17FFB672A284E6E0035B362 /* CPUClockSettingView.swift in Sources */,
 				C15DC4312A1B438B0053B8EA /* act_a.cpp in Sources */,
 				C15DC7742A1B4B2D0053B8EA /* disassembler.cpp in Sources */,
 				C15DC4142A1B438B0053B8EA /* ptm_gets.cpp in Sources */,
@@ -3231,6 +3250,7 @@
 				C15DC77A2A1B4B2D0053B8EA /* flowcontrol.cpp in Sources */,
 				C15DC4192A1B438B0053B8EA /* nim_aoc.cpp in Sources */,
 				C15DC7782A1B4B2D0053B8EA /* declaration.cpp in Sources */,
+				C17FFB632A28498C0035B362 /* LayoutOptionsSettingView.swift in Sources */,
 				C15DC4452A1B438B0053B8EA /* uds_beacon.cpp in Sources */,
 				C15DC4442A1B438B0053B8EA /* nwm_soc.cpp in Sources */,
 				C15DC4A12A1B438B0053B8EA /* savedata_archive.cpp in Sources */,
@@ -3316,6 +3336,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -3348,6 +3369,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -3376,6 +3398,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -3408,6 +3431,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -3429,11 +3453,11 @@
 		C15DC0D62A1B40C10053B8EA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = DarkAppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = LightAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = emuThreeDS/emuThreeDS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "\"emuThreeDS/Preview Content\"";
 				DEVELOPMENT_TEAM = Z3ZEABYY6P;
 				ENABLE_PREVIEWS = YES;
@@ -3458,7 +3482,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -3468,6 +3492,7 @@
 					"$(PROJECT_DIR)/emuThreeDS/externals",
 				);
 				MARKETING_VERSION = 1.0.6;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lboost_serialization",
 					"-lboost_program_options",
@@ -3484,7 +3509,7 @@
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
 					"\"$(SRCROOT)/emuThreeDS/externals/source/cryptopp\"",
-					"$(HOME)/VulkanSDK/1.3.243.0/MoltenVK/include",
+					"$(HOME)/VulkanSDK/1.3.250.0/MoltenVK/include",
 				);
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -3493,11 +3518,11 @@
 		C15DC0D72A1B40C10053B8EA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = DarkAppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = LightAppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = emuThreeDS/emuThreeDS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_ASSET_PATHS = "\"emuThreeDS/Preview Content\"";
 				DEVELOPMENT_TEAM = Z3ZEABYY6P;
 				ENABLE_PREVIEWS = YES;
@@ -3518,7 +3543,7 @@
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -3528,6 +3553,7 @@
 					"$(PROJECT_DIR)/emuThreeDS/externals",
 				);
 				MARKETING_VERSION = 1.0.6;
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"-lboost_serialization",
 					"-lboost_program_options",
@@ -3544,7 +3570,7 @@
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
 					"\"$(SRCROOT)/emuThreeDS/externals/source/cryptopp\"",
-					"$(HOME)/VulkanSDK/1.3.243.0/MoltenVK/include",
+					"$(HOME)/VulkanSDK/1.3.250.0/MoltenVK/include",
 				);
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

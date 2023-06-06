@@ -10,7 +10,7 @@ import MetalKit
 
 class EmulationManager {
     static let shared = EmulationManager()
-    private let wrapper = CitraWrapper()
+    let wrapper = CitraWrapper()
     
     var hasConfigured: Bool = false
     

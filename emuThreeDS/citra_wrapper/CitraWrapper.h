@@ -20,6 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readwrite) BOOL isPaused, isRunning;
 
 +(CitraWrapper *) sharedInstance;
+-(instancetype) init;
 
 
 -(uint16_t*) GetIcon:(NSString *)path;
