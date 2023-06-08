@@ -159,6 +159,11 @@ class EmulationViewController : UIViewController {
         extendedGamepad.buttonB.valueChangedHandler = EmulationInput.buttonB.valueChangedHandler
         extendedGamepad.buttonX.valueChangedHandler = EmulationInput.buttonX.valueChangedHandler
         extendedGamepad.buttonY.valueChangedHandler = EmulationInput.buttonY.valueChangedHandler
+
+        extendedGamepad.dpad.up.valueChangedHandler = EmulationInput.dpadUp.valueChangedHandler
+        extendedGamepad.dpad.down.valueChangedHandler = EmulationInput.dpadDown.valueChangedHandler
+        extendedGamepad.dpad.left.valueChangedHandler = EmulationInput.dpadLeft.valueChangedHandler
+        extendedGamepad.dpad.right.valueChangedHandler = EmulationInput.dpadRight.valueChangedHandler
         
         extendedGamepad.leftShoulder.valueChangedHandler = EmulationInput.buttonL.valueChangedHandler
         extendedGamepad.rightShoulder.valueChangedHandler = EmulationInput.buttonR.valueChangedHandler
