@@ -1,29 +1,29 @@
 //
-//  LayoutOptionsSettingView.swift
+//  StereoRenderSettingView.swift
 //  emuThreeDS
 //
-//  Created by Antique on 1/6/2023.
+//  Created by Antique on 8/6/2023.
 //
 
 import SwiftUI
 
-enum LayoutOptions : Int, CaseIterable, CustomStringConvertible, Identifiable {
-    case defaultOption = 0, singleScreen = 1, largeScreen = 2, sideScreen = 3, mobilePortrait = 5, mobileLandscape = 6
+enum StereoRenderOptions : Int, CaseIterable, CustomStringConvertible, Identifiable {
+    case off = 0, sideBySide = 1, anaglyph = 2, interlaced = 3, reverseInterlaced = 4, cardboardVR = 5
     
     var description: String {
         switch self {
-        case .defaultOption:
-            return "Default"
-        case .singleScreen:
-            return "Single Screen"
-        case .largeScreen:
-            return "Large Screen"
-        case .sideScreen:
-            return "Side Screen"
-        case .mobilePortrait:
-            return "Portrait"
-        case .mobileLandscape:
-            return "Landscape"
+        case .off:
+            return "Off"
+        case .sideBySide:
+            return "Side By Side"
+        case .anaglyph:
+            return "Anaglyph"
+        case .interlaced:
+            return "Interlaced"
+        case .reverseInterlaced:
+            return "Reverse Interlaced"
+        case .cardboardVR:
+            return "Cardboard VR"
         }
     }
     
@@ -32,22 +32,22 @@ enum LayoutOptions : Int, CaseIterable, CustomStringConvertible, Identifiable {
     }
 }
 
-struct LayoutOptionSettingView: View {
+struct StereoRenderSettingView: View {
     var impactGenerator: UIImpactFeedbackGenerator
     
     var identifier: String
     var systemName: String
     var title: String
     
-    @State var selectedItem: LayoutOptions = .defaultOption
+    @State var selectedItem: StereoRenderOptions = .off
     var isExperimental: Bool = false
     
     var body: some View {
         VStack(alignment: .leading) {
             if #available(iOS 16, *) {
                 Picker(selection: $selectedItem) {
-                    ForEach(LayoutOptions.allCases, id: \.id) { layoutOption in
-                        Text(layoutOption.description)
+                    ForEach(StereoRenderOptions.allCases, id: \.id) { stereoRenderOption in
+                        Text(stereoRenderOption.description)
                     }
                 } label: {
                     Label(title, systemImage: systemName)
@@ -55,8 +55,8 @@ struct LayoutOptionSettingView: View {
                 .pickerStyle(.navigationLink)
             } else {
                 Picker(selection: $selectedItem) {
-                    ForEach(LayoutOptions.allCases, id: \.id) { layoutOption in
-                        Text(layoutOption.description)
+                    ForEach(StereoRenderOptions.allCases, id: \.id) { stereoRenderOptions in
+                        Text(stereoRenderOptions.description)
                     }
                 } label: {
                     Label(title, systemImage: systemName)
@@ -71,7 +71,7 @@ struct LayoutOptionSettingView: View {
             }
         }
         .onAppear {
-            selectedItem = LayoutOptions(rawValue: UserDefaults.standard.integer(forKey: identifier)) ?? .defaultOption
+            selectedItem = StereoRenderOptions(rawValue: UserDefaults.standard.integer(forKey: identifier)) ?? .off
         }
         .onChange(of: selectedItem, perform: { newValue in
             UserDefaults.standard.set(selectedItem.rawValue, forKey: identifier)

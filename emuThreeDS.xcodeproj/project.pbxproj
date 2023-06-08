@@ -625,11 +625,13 @@
 		C17FAB8F2A1B74BD0020FF0B /* LibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */; };
 		C17FFB632A28498C0035B362 /* LayoutOptionsSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB622A28498C0035B362 /* LayoutOptionsSettingView.swift */; };
 		C17FFB652A284A0F0035B362 /* ResolutionFactorSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB642A284A0F0035B362 /* ResolutionFactorSettingView.swift */; };
-		C17FFB672A284E6E0035B362 /* CPUClockSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB662A284E6E0035B362 /* CPUClockSettingView.swift */; };
+		C17FFB672A284E6E0035B362 /* StepperSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17FFB662A284E6E0035B362 /* StepperSettingView.swift */; };
 		C1A3E21D2A1F139300440F83 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E21C2A1F139300440F83 /* SettingsView.swift */; };
 		C1A3E2242A1F1DCC00440F83 /* LibraryManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */; };
 		C1A3E22C2A1F2B3600440F83 /* DirectoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */; };
 		C1A3E22E2A1F399300440F83 /* Bruno.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1A3E22D2A1F399300440F83 /* Bruno.swift */; };
+		C1FBF80C2A31992C0079CED3 /* StereoRenderSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FBF80B2A31992C0079CED3 /* StereoRenderSettingView.swift */; };
+		C1FBF80E2A319BA50079CED3 /* ToggleSettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1FBF80D2A319BA50079CED3 /* ToggleSettingView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1275,7 +1277,7 @@
 		C17FAB8E2A1B74BD0020FF0B /* LibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryView.swift; sourceTree = "<group>"; };
 		C17FFB622A28498C0035B362 /* LayoutOptionsSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LayoutOptionsSettingView.swift; sourceTree = "<group>"; };
 		C17FFB642A284A0F0035B362 /* ResolutionFactorSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResolutionFactorSettingView.swift; sourceTree = "<group>"; };
-		C17FFB662A284E6E0035B362 /* CPUClockSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CPUClockSettingView.swift; sourceTree = "<group>"; };
+		C17FFB662A284E6E0035B362 /* StepperSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepperSettingView.swift; sourceTree = "<group>"; };
 		C1A3E21C2A1F139300440F83 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C1A3E2222A1F1DBF00440F83 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C1A3E2232A1F1DCC00440F83 /* LibraryManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryManager.swift; sourceTree = "<group>"; };
@@ -1283,6 +1285,8 @@
 		C1A3E22A2A1F2B3600440F83 /* DirectoryManager.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DirectoryManager.h; sourceTree = "<group>"; };
 		C1A3E22B2A1F2B3600440F83 /* DirectoryManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = DirectoryManager.mm; sourceTree = "<group>"; };
 		C1A3E22D2A1F399300440F83 /* Bruno.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bruno.swift; sourceTree = "<group>"; };
+		C1FBF80B2A31992C0079CED3 /* StereoRenderSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StereoRenderSettingView.swift; sourceTree = "<group>"; };
+		C1FBF80D2A319BA50079CED3 /* ToggleSettingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleSettingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2667,9 +2671,11 @@
 		C17FFB612A2849740035B362 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				C17FFB662A284E6E0035B362 /* CPUClockSettingView.swift */,
 				C17FFB622A28498C0035B362 /* LayoutOptionsSettingView.swift */,
 				C17FFB642A284A0F0035B362 /* ResolutionFactorSettingView.swift */,
+				C17FFB662A284E6E0035B362 /* StepperSettingView.swift */,
+				C1FBF80B2A31992C0079CED3 /* StereoRenderSettingView.swift */,
+				C1FBF80D2A319BA50079CED3 /* ToggleSettingView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -2828,6 +2834,7 @@
 				C15E09782A1B5D9700D70564 /* cast.cpp in Sources */,
 				C15E08E92A1B5D9700D70564 /* md2.cpp in Sources */,
 				C15DC40D2A1B438B0053B8EA /* err_f.cpp in Sources */,
+				C1FBF80E2A319BA50079CED3 /* ToggleSettingView.swift in Sources */,
 				C15E09032A1B5D9700D70564 /* rdrand.cpp in Sources */,
 				C15E097D2A1B5D9700D70564 /* keccak.cpp in Sources */,
 				C15E099D2A1B5D9700D70564 /* shacal2.cpp in Sources */,
@@ -3110,7 +3117,7 @@
 				C15E097A2A1B5D9700D70564 /* speck128_simd.cpp in Sources */,
 				C15DC5C32A1B46380053B8EA /* vertex_loader.cpp in Sources */,
 				C15E08DE2A1B5D9700D70564 /* power9_ppc.cpp in Sources */,
-				C17FFB672A284E6E0035B362 /* CPUClockSettingView.swift in Sources */,
+				C17FFB672A284E6E0035B362 /* StepperSettingView.swift in Sources */,
 				C15DC4312A1B438B0053B8EA /* act_a.cpp in Sources */,
 				C15DC7742A1B4B2D0053B8EA /* disassembler.cpp in Sources */,
 				C15DC4142A1B438B0053B8EA /* ptm_gets.cpp in Sources */,
@@ -3138,6 +3145,7 @@
 				C15DC4AC2A1B438B0053B8EA /* archive_selfncch.cpp in Sources */,
 				C15DC5B52A1B46380053B8EA /* rasterizer.cpp in Sources */,
 				C15DC1CE2A1B432A0053B8EA /* error.cpp in Sources */,
+				C1FBF80C2A31992C0079CED3 /* StereoRenderSettingView.swift in Sources */,
 				C15DC7792A1B4B2D0053B8EA /* floatop.cpp in Sources */,
 				C15DC5912A1B46380053B8EA /* vk_rasterizer.cpp in Sources */,
 				C15E09382A1B5D9700D70564 /* validat0.cpp in Sources */,

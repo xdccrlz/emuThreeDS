@@ -5,6 +5,8 @@
 //  Created by Antique on 30/5/2023.
 //
 
+import AVFoundation
+import AVFAudio
 import Foundation
 import GameController
 import MetalKit
@@ -15,6 +17,7 @@ class EmulationViewController : UIViewController {
     var emulationManager: EmulationManager
     
     var metalView = MTKView()
+    var menuButton: UIButton!
     
     var virtualController = SuperController(elements: [GCInputLeftThumbstick, GCInputRightThumbstick, GCInputLeftShoulder, GCInputRightShoulder, GCInputLeftTrigger, GCInputRightTrigger, GCInputButtonA, GCInputButtonB, GCInputButtonX, GCInputButtonY])
     
@@ -32,7 +35,6 @@ class EmulationViewController : UIViewController {
         
         metalView.translatesAutoresizingMaskIntoConstraints = false
         metalView.device = MTLCreateSystemDefaultDevice()
-        metalView.autoResizeDrawable = true
         view.addSubview(metalView)
         view.addConstraints([
             metalView.topAnchor.constraint(equalTo: view.topAnchor),
@@ -41,8 +43,30 @@ class EmulationViewController : UIViewController {
             metalView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
         
-        NotificationCenter.default.addObserver(self, selector: #selector(controllerDidConnect), name: NSNotification.Name.GCControllerDidConnect, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(controllerDidConnect), name: NSNotification.Name.GCControllerDidDisconnect, object: nil)
+        var configuration = UIButton.Configuration.plain()
+        configuration.image = UIImage(systemName: "gearshape")
+        menuButton = UIButton(configuration: configuration)
+        menuButton.translatesAutoresizingMaskIntoConstraints = false
+        menuButton.menu = UIMenu(children: [
+            UIMenu(title: "Controller", image: UIImage(systemName: "gamecontroller"), children: [
+                UIAction(title: "Connect", handler: { _ in
+                    self.connect()
+                }),
+                UIAction(title: "Disconnect", handler: { _ in
+                    self.disconnect()
+                }),
+            ])
+        ])
+        menuButton.showsMenuAsPrimaryAction = true
+        metalView.addSubview(menuButton)
+        view.addConstraints([
+            menuButton.topAnchor.constraint(equalTo: metalView.safeAreaLayoutGuide.topAnchor, constant: 10),
+            menuButton.leadingAnchor.constraint(equalTo: metalView.safeAreaLayoutGuide.leadingAnchor, constant: 10)
+        ])
+        
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(controllerDidBecomeCurrent), name: NSNotification.Name.GCControllerDidBecomeCurrent, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(audioRouteDidChange(_:)), name: AVAudioSession.routeChangeNotification, object: nil)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -105,43 +129,47 @@ class EmulationViewController : UIViewController {
     }
     
     
-    @objc func controllerDidConnect() {
-        if let controller = GCController.controllers().first(where: { $0.battery != nil }) {
-            if let _ = controller.battery {
-                virtualController.disconnect()
-                
-                controller.extendedGamepad?.buttonA.pressedChangedHandler = EmulationInput.buttonA.valueChangedHandler
-                controller.extendedGamepad?.buttonB.pressedChangedHandler = EmulationInput.buttonB.valueChangedHandler
-                controller.extendedGamepad?.buttonX.pressedChangedHandler = EmulationInput.buttonX.valueChangedHandler
-                controller.extendedGamepad?.buttonY.pressedChangedHandler = EmulationInput.buttonY.valueChangedHandler
-                
-                controller.extendedGamepad?.leftShoulder.pressedChangedHandler = EmulationInput.buttonSelect.valueChangedHandler
-                controller.extendedGamepad?.rightShoulder.pressedChangedHandler = EmulationInput.buttonStart.valueChangedHandler
-                
-                controller.extendedGamepad?.leftTrigger.valueChangedHandler = EmulationInput.buttonL.valueChangedHandler
-                controller.extendedGamepad?.rightTrigger.valueChangedHandler = EmulationInput.buttonR.valueChangedHandler
-                
-                controller.extendedGamepad?.leftThumbstick.valueChangedHandler = EmulationInput.circlePad.valueChangedHandler
-                controller.extendedGamepad?.rightThumbstick.valueChangedHandler = EmulationInput.circlePadPro.valueChangedHandler
-            } else {
-                Task {
-                    try await virtualController.connect()
-                }
-                
-                virtualController.handleA = EmulationInput.buttonA.valueChangedHandler
-                virtualController.handleB = EmulationInput.buttonB.valueChangedHandler
-                virtualController.handleX = EmulationInput.buttonX.valueChangedHandler
-                virtualController.handleY = EmulationInput.buttonY.valueChangedHandler
-                
-                virtualController.handleLeftShoulder = EmulationInput.buttonSelect.valueChangedHandler
-                virtualController.handleRightShoulder = EmulationInput.buttonStart.valueChangedHandler
-                
-                virtualController.handleLeftTrigger = EmulationInput.buttonL.valueChangedHandler
-                virtualController.handleRightTrigger = EmulationInput.buttonR.valueChangedHandler
-                
-                virtualController.handleLeftThumbstick = EmulationInput.circlePad.valueChangedHandler
-                virtualController.handleRightThumbstick = EmulationInput.circlePadPro.valueChangedHandler
-            }
+    
+    @objc func audioRouteDidChange(_ notification: Notification) {
+        guard let reason = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? AVAudioSession.RouteChangeReason else {
+            return
         }
+        
+        switch (reason) {
+        case .newDeviceAvailable:
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, options: [.allowBluetooth, .allowBluetoothA2DP])
+                try AVAudioSession.sharedInstance().setActive(true)
+            } catch { print(error.localizedDescription) }
+        case .oldDeviceUnavailable:
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback)
+                try AVAudioSession.sharedInstance().setActive(true)
+            } catch { print(error.localizedDescription) }
+        default: break
+        }
+    }
+    
+    @objc func controllerDidBecomeCurrent() {
+        guard let currentController = GCController.current, let extendedGamepad = currentController.extendedGamepad else {
+            return
+        }
+        
+        extendedGamepad.buttonA.valueChangedHandler = EmulationInput.buttonA.valueChangedHandler
+        extendedGamepad.buttonB.valueChangedHandler = EmulationInput.buttonB.valueChangedHandler
+        extendedGamepad.buttonX.valueChangedHandler = EmulationInput.buttonX.valueChangedHandler
+        extendedGamepad.buttonY.valueChangedHandler = EmulationInput.buttonY.valueChangedHandler
+        
+        extendedGamepad.leftShoulder.valueChangedHandler = EmulationInput.buttonL.valueChangedHandler
+        extendedGamepad.rightShoulder.valueChangedHandler = EmulationInput.buttonR.valueChangedHandler
+        
+        extendedGamepad.leftTrigger.valueChangedHandler = EmulationInput.buttonZL.valueChangedHandler
+        extendedGamepad.rightTrigger.valueChangedHandler = EmulationInput.buttonZR.valueChangedHandler
+        
+        extendedGamepad.buttonOptions?.valueChangedHandler = EmulationInput.buttonSelect.valueChangedHandler
+        extendedGamepad.buttonMenu.valueChangedHandler = EmulationInput.buttonStart.valueChangedHandler
+        
+        extendedGamepad.leftThumbstick.valueChangedHandler = EmulationInput.circlePad.valueChangedHandler
+        extendedGamepad.rightThumbstick.valueChangedHandler = EmulationInput.circlePadPro.valueChangedHandler
     }
 }

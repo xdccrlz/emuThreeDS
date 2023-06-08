@@ -55,7 +55,9 @@ static void InitializeLogging() {
 
 -(instancetype) init {
     if (self = [super init]) {
-        InitializeLogging();
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:@"enable_logging"]) {
+            InitializeLogging();
+        }
         
         _thread = [[NSThread alloc] initWithTarget:self selector:@selector(start) object:NULL];
         [_thread setName:@"emuThreeDS"];
@@ -94,18 +96,31 @@ static void InitializeLogging() {
 -(void) load:(NSString *)path {
     Config{};
     
-    NSInteger layoutOptionInteger = [[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"portrait_layout_option"]] unsignedIntValue];
-    Settings::values.layout_option.SetValue(layoutOptionInteger == 0 ? Settings::LayoutOption::MobilePortrait : (Settings::LayoutOption)layoutOptionInteger);
-    NSInteger resolutionFactorInteger = [[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"resolution_factor"]] unsignedIntValue];
-    Settings::values.resolution_factor.SetValue(resolutionFactorInteger == 0 ? 2 : [[NSNumber numberWithInteger:resolutionFactorInteger] intValue]);
+    Settings::values.layout_option.SetValue((Settings::LayoutOption)[[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"portrait_layout_option"]] unsignedIntValue]);
+    Settings::values.resolution_factor.SetValue([[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"resolution_factor"]] unsignedIntValue]);
     Settings::values.async_shader_compilation.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"async_shader_compilation"]);
     Settings::values.async_presentation.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"async_presentation"]);
     Settings::values.use_hw_shader.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"use_hw_shader"]);
     
     Settings::values.use_cpu_jit.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"use_cpu_jit"]);
-    NSInteger cpuClockPercentage = [[NSUserDefaults standardUserDefaults] integerForKey:@"cpu_clock_percentage"];
-    Settings::values.cpu_clock_percentage.SetValue(cpuClockPercentage == 0 ? 100 : [[NSNumber numberWithInteger:cpuClockPercentage] intValue]);
+    Settings::values.cpu_clock_percentage.SetValue([[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"cpu_clock_percentage"]] unsignedIntValue]);
     Settings::values.is_new_3ds.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"is_new_3ds"]);
+    
+    Settings::values.use_vsync_new.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"use_vsync_new"]);
+    Settings::values.shaders_accurate_mul.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"shaders_accurate_mul"]);
+    Settings::values.use_shader_jit.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"use_shader_jit"]);
+    
+    Settings::values.swap_screen.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"swap_screen"]);
+    Settings::values.upright_screen.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"upright_screen"]);
+    
+    Settings::values.render_3d.SetValue((Settings::StereoRenderOption)[[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"render_3d"]] unsignedIntValue]);
+    Settings::values.factor_3d.SetValue([[NSNumber numberWithInteger:[[NSUserDefaults standardUserDefaults] integerForKey:@"factor_3d"]] unsignedIntValue]);
+    
+    Settings::values.dump_textures.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"dump_textures"]);
+    Settings::values.custom_textures.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"custom_textures"]);
+    Settings::values.preload_textures.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"preload_textures"]);
+    Settings::values.async_custom_loading.SetValue([[NSUserDefaults standardUserDefaults] boolForKey:@"async_custom_loading"]);
+    
     for (const auto& service_module : Service::service_module_map) {
         Settings::values.lle_modules.emplace(service_module.name, ![[NSUserDefaults standardUserDefaults] boolForKey:@"use_hle"]);
     }
