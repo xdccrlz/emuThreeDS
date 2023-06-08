@@ -8,182 +8,49 @@
 import Foundation
 import SwiftUI
 
-struct ToggleSettingView: View {
-    var impactGenerator = UIImpactFeedbackGenerator(style: .medium)
-    
-    var identifier: String
-    var systemName: String
-    var title: String
-    
-    @State var isOn: Bool = false
-    
-    var body: some View {
-        Toggle(isOn: $isOn) {
-            Label(title, systemImage: systemName)
-        }
-        .onChange(of: isOn) { newValue in
-            UserDefaults.standard.set(newValue, forKey: identifier)
-            impactGenerator.impactOccurred()
-        }
-        .onAppear {
-            isOn = UserDefaults.standard.bool(forKey: identifier)
-        }
-    }
-}
-
-
-enum ResolutionFactors : Int, CaseIterable, CustomStringConvertible, Identifiable {
-    var id: Self {
-        return self
-    }
-    
-    case zero, one, two, three, four, five, six, seven, eight, nine, ten
-    
-    var description: String {
-        switch self {
-        case .zero:
-            return "0"
-        case .one:
-            return "1"
-        case .two:
-            return "2"
-        case .three:
-            return "3"
-        case .four:
-            return "4"
-        case .five:
-            return "5"
-        case .six:
-            return "6"
-        case .seven:
-            return "7"
-        case .eight:
-            return "8"
-        case .nine:
-            return "9"
-        case .ten:
-            return "10"
-        }
-    }
-}
-
-
-struct ResolutionFactorSettingView: View {
-    var impactGenerator = UIImpactFeedbackGenerator(style: .medium)
-    
-    var identifier: String
-    var systemName: String
-    var title: String
-    
-    @State var selectedItem: ResolutionFactors = .zero
-    
-    var body: some View {
-        HStack {
-            Image(systemName: systemName)
-                .renderingMode(.template)
-                .foregroundColor(.yellow)
-            Picker(title, selection: $selectedItem) {
-                ForEach(ResolutionFactors.allCases, id: \.id) { resolution in
-                    let topResH = 240, bottomResH = 320
-                    
-                    Text("\(topResH * resolution.rawValue)p, \(bottomResH * resolution.rawValue)p")
-                }
-            }
-        }
-        .onAppear {
-            selectedItem = ResolutionFactors(rawValue: UserDefaults.standard.integer(forKey: identifier)) ?? .zero
-        }
-        .onChange(of: selectedItem, perform: { newValue in
-            UserDefaults.standard.set(selectedItem.rawValue, forKey: identifier)
-            impactGenerator.impactOccurred()
-        })
-        .pickerStyle(.navigationLink)
-    }
-}
-
-
-enum LayoutOptions : Int, CaseIterable, CustomStringConvertible, Identifiable {
-    var id: Self {
-        return self
-    }
-    
-    case defaultOption = 0, singleScreen = 1, largeScreen = 2, sideScreen = 3, mobilePortrait = 5, mobileLandscape = 6
-    
-    var description: String {
-        switch self {
-        case .defaultOption:
-            return "Default"
-        case .singleScreen:
-            return "Single Screen"
-        case .largeScreen:
-            return "Large Screen"
-        case .sideScreen:
-            return "Side Screen"
-        case .mobilePortrait:
-            return "Mobile Portrait"
-        case .mobileLandscape:
-            return "Mobile Landscape"
-        }
-    }
-}
-
-
-struct LayoutOptionSettingView: View {
-    var impactGenerator = UIImpactFeedbackGenerator(style: .medium)
-    
-    var identifier: String
-    var systemName: String
-    var title: String
-    
-    @State var selectedItem: LayoutOptions = .defaultOption
-    
-    var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Image(systemName: systemName)
-                    .renderingMode(.template)
-                    .foregroundColor(.yellow)
-                Picker(title, selection: $selectedItem) {
-                    ForEach(LayoutOptions.allCases, id: \.id) { layoutOption in
-                        Text(layoutOption.description)
-                    }
-                }
-            }
-            Text("Experimental")
-                .font(.caption)
-                .foregroundColor(.orange)
-        }
-        .onAppear {
-            selectedItem = LayoutOptions(rawValue: UserDefaults.standard.integer(forKey: identifier)) ?? .defaultOption
-        }
-        .onChange(of: selectedItem, perform: { newValue in
-            UserDefaults.standard.set(selectedItem.rawValue, forKey: identifier)
-            impactGenerator.impactOccurred()
-        })
-        .pickerStyle(.navigationLink)
-    }
-}
-
-
-
 struct SettingsView: View {
+    var impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+    
     var body: some View {
         NavigationView {
             List(content: {
                 Section {
-                    ToggleSettingView(identifier: "use_cpu_jit", systemName: "cpu", title: "Use JIT")
-                    ToggleSettingView(identifier: "use_hle", systemName: "brain", title: "Use HLE")
+                    ToggleSettingView(identifier: "use_cpu_jit", systemName: "cpu", title: "Enable JIT")
+                    ToggleSettingView(identifier: "use_hle", systemName: "brain", title: "Enable HLE")
+                    StepperSettingView(impactGenerator: impactGenerator, identifier: "cpu_clock_percentage", systemName: "percent", title: "CPU Clock", minValue: 5, maxValue: 400)
+                    ToggleSettingView(identifier: "is_new_3ds", systemName: "star", title: "Use New 3DS")
+                    ToggleSettingView(identifier: "enable_logging", systemName: "ladybug", title: "Enable Logging")
                 } header: {
                     Text("Core")
                 }
                 .headerProminence(.increased)
                 
                 Section {
-                    ResolutionFactorSettingView(identifier: "resolution_factor", systemName: "aspectratio", title: "Resolution")
-                    LayoutOptionSettingView(identifier: "portrait_layout_option", systemName: "iphone", title: "Portrait Layout")
-                    LayoutOptionSettingView(identifier: "landscape_layout_option", systemName: "iphone.landscape", title: "Landscape Layout")
+                    ToggleSettingView(identifier: "async_shader_compilation", systemName: "square.stack.3d.down.forward", title: "Async Shader Compilation")
+                    ToggleSettingView(identifier: "async_presentation", systemName: "videoprojector", title: "Async Presentation")
+                    ToggleSettingView(identifier: "use_hw_shader", systemName: "square.stack.3d.down.forward", title: "Enable HW Shaders")
+                    ToggleSettingView(identifier: "use_vsync_new", systemName: "clock.arrow.2.circlepath", title: "Enable VSync New", isExperimental: true)
+                    ToggleSettingView(identifier: "shaders_accurate_mul", systemName: "target", title: "Shaders Accurate Mul", isExperimental: true)
+                    ToggleSettingView(identifier: "use_shader_jit", systemName: "bolt.badge.clock", title: "Enable Shader JIT", isExperimental: true)
+                    ResolutionFactorSettingView(impactGenerator: impactGenerator, identifier: "resolution_factor", systemName: "aspectratio", title: "Resolution")
+                    LayoutOptionSettingView(impactGenerator: impactGenerator, identifier: "portrait_layout_option", systemName: "iphone", title: "Portrait Layout")
+                    LayoutOptionSettingView(impactGenerator: impactGenerator, identifier: "landscape_layout_option", systemName: "iphone.landscape", title: "Landscape Layout")
                 } header: {
                     Text("Renderer")
+                }
+                .headerProminence(.increased)
+                
+                Section {
+                    ToggleSettingView(identifier: "swap_screen", systemName: "rectangle.2.swap", title: "Swap Screen", isExperimental: true)
+                    ToggleSettingView(identifier: "upright_screen", systemName: "leaf", title: "Upright Screen", isExperimental: true)
+                    StereoRenderSettingView(impactGenerator: impactGenerator, identifier: "render_3d", systemName: "view.3d", title: "Stereo Render")
+                    StepperSettingView(impactGenerator: impactGenerator, identifier: "factor_3d", systemName: "textformat.123", title: "3D Factor", minValue: 0, maxValue: 100)
+                    ToggleSettingView(identifier: "dump_textures", systemName: "arrow.down.doc", title: "Dump Textures", isExperimental: true)
+                    ToggleSettingView(identifier: "custom_textures", systemName: "doc.text.magnifyingglass", title: "Custom Textures", isExperimental: true)
+                    ToggleSettingView(identifier: "preload_textures", systemName: "arrow.down.doc", title: "Preload Textures", isExperimental: true)
+                    ToggleSettingView(identifier: "async_custom_loading", systemName: "leaf", title: "Async Custom Loading", isExperimental: true)
+                } header: {
+                    Text("Renderer (cont.)")
                 }
                 .headerProminence(.increased)
             })

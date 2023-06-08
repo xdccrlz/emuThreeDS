@@ -4,20 +4,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## WIP
-## [1.0.6.3] - Unknown
+## [1.0.6.5] - WIP
 ### Added
-#### Controller
-- Added L, R, Select, Start and C-Stick
-
-#### Settings
-- Added CPU Clock, Use New 3DS, Asynchronous Shaders, Asynchronous Presentation and Enable HW Shaders
+- Load and save state option in-game
+- Thumbstick > D-Pad and D-Pad > Thumbstick toggle option in-game
 
 ### Changed
-- Removed 0x resolution multiplier and improved formatting of resolutions
+- Right thumbstick is removed when "Use New 3DS" option is disabled
 
-## [1.0.6.2] - 1st June 2023
-Unable to remember changes (was not many iirc)
+## [1.0.6.4] - 8th June 2023
+### Added
+- Added new settings
+  - Enable Logging
+  - Enable VSync New
+  - Shaders Accurate Mul
+  - Enable Shader JIT
+  - Swap Screen
+  - Upright Screen
+  - Stereo Render
+  - 3D Factor
+  - Dump Textures
+  - Custom Textures
+  - Preload Textures
+  - Async Custom Loading
+- Added in-game menu button
+  - <span style="color: rgb(255, 149, 0)">Current option appears buggy</span>
+- Added full physical controller support
+
+### Changed
+- Updated VulkanSDK from `v1.3.243.0` to `v1.3.250.0`
+
+### Fixed
+- Fixed an issue where audio would not play through headphones, etc
+  - <span style="color: rgb(255, 149, 0)">This will need to be tested</span>
 
 ## [1.0.6.1] - 29th May 2023
 ### Added

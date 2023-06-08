@@ -51,35 +51,69 @@ class SuperController {
         }
     }
     
-    var handleThumbstick: GCControllerDirectionPadValueChangedHandler? = nil {
+    var handleLeftShoulder: GCControllerButtonValueChangedHandler? = nil {
+        didSet {
+            guard let lShoulder = virtualController?.controller?.extendedGamepad?.leftShoulder else {
+                return
+            }
+            
+            lShoulder.valueChangedHandler = handleLeftShoulder
+        }
+    }
+    
+    var handleRightShoulder: GCControllerButtonValueChangedHandler? = nil {
+        didSet {
+            guard let rShoulder = virtualController?.controller?.extendedGamepad?.rightShoulder else {
+                return
+            }
+            
+            rShoulder.valueChangedHandler = handleRightShoulder
+        }
+    }
+    
+    var handleLeftThumbstick: GCControllerDirectionPadValueChangedHandler? = nil {
         didSet {
             guard let lThumbstick = virtualController?.controller?.extendedGamepad?.leftThumbstick else {
                 return
             }
             
-            lThumbstick.valueChangedHandler = handleThumbstick
+            lThumbstick.valueChangedHandler = handleLeftThumbstick
         }
     }
     
-    var handleOptions: GCControllerButtonValueChangedHandler? = nil {
+    var handleRightThumbstick: GCControllerDirectionPadValueChangedHandler? = nil {
         didSet {
-            guard let options = virtualController?.controller?.extendedGamepad?.buttonOptions else {
+            guard let rThumbstick = virtualController?.controller?.extendedGamepad?.rightThumbstick else {
                 return
             }
             
-            options.valueChangedHandler = handleOptions
+            rThumbstick.valueChangedHandler = handleRightThumbstick
         }
     }
     
-    var handleMenu: GCControllerButtonValueChangedHandler? = nil {
+    var handleLeftTrigger: GCControllerButtonValueChangedHandler? = nil {
         didSet {
-            guard let menu = virtualController?.controller?.extendedGamepad?.buttonMenu else {
+            guard let lTrigger = virtualController?.controller?.extendedGamepad?.leftTrigger else {
                 return
             }
             
-            menu.valueChangedHandler = handleMenu
+            lTrigger.valueChangedHandler = handleLeftTrigger
         }
     }
+    
+    var handleRightTrigger: GCControllerButtonValueChangedHandler? = nil {
+        didSet {
+            guard let rTrigger = virtualController?.controller?.extendedGamepad?.rightTrigger else {
+                return
+            }
+            
+            rTrigger.valueChangedHandler = handleRightTrigger
+        }
+    }
+    
+    
+    
+    
     
     
     init(elements: Set<String>) {
