@@ -4,7 +4,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## WIP
+## [1.0.6.4] - Unknown
+### Added
+- Added new settings
+  - Enable Logging
+  - Enable VSync New
+  - Shaders Accurate Mul
+  - Enable Shader JIT
+  - Swap Screen
+  - Upright Screen
+  - Stereo Render
+  - 3D Factor
+  - Dump Textures
+  - Custom Textures
+  - Preload Textures
+  - Async Custom Loading
+- Added in-game menu button
+  - <span style="color: rgb(255, 149, 0)">Current option appears buggy</span>
+- Added full physical controller support
+
+### Changed
+- Updated VulkanSDK from `v1.3.243.0` to `v1.3.250.0`
+
+### Fixed
+- Fixed an issue where audio would not play through headphones, etc
+  - <span style="color: rgb(255, 149, 0)">This will need to be tested</span>
+
 ## [1.0.6.1] - 29th May 2023
 ### Added
 - Built XCFrameworks for 90% of all external libraries
