@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.6.4] - Unknown
+## [1.0.6.5] - WIP
+### Added
+- Load and save state option in-game
+- Thumbstick > D-Pad and D-Pad > Thumbstick toggle option in-game
+
+### Changed
+- Right thumbstick is removed when "Use New 3DS" option is disabled
+
+## [1.0.6.4] - 8th June 2023
 ### Added
 - Added new settings
   - Enable Logging
