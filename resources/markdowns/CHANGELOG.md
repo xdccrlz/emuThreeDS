@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Load and save state option in-game
 - Thumbstick > D-Pad and D-Pad > Thumbstick toggle option in-game
+- Ability to convert and copy (move to `/roms`) or install `.cia` roms
 
 ### Changed
 - Right thumbstick is removed when "Use New 3DS" option is disabled
