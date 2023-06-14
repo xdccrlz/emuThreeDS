@@ -112,6 +112,25 @@ class SuperController {
     }
     
     
+    var handleOptions: GCControllerButtonValueChangedHandler? = nil {
+        didSet {
+            guard let options = virtualController?.controller?.extendedGamepad?.buttonOptions else {
+                return
+            }
+            
+            options.valueChangedHandler = handleOptions
+        }
+    }
+    
+    var handleMenu: GCControllerButtonValueChangedHandler? = nil {
+        didSet {
+            guard let menu = virtualController?.controller?.extendedGamepad?.buttonMenu else {
+                return
+            }
+            
+            menu.valueChangedHandler = handleMenu
+        }
+    }
     
     
     
