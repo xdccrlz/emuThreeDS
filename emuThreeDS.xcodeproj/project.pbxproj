@@ -3408,13 +3408,13 @@
 					"$(PROJECT_DIR)/emuThreeDS/externals",
 				);
 				MARKETING_VERSION = 1.0.6.5;
-				PRODUCT_BUNDLE_IDENTIFIER = com.antique.emuThreeDS;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xdccrlz.emuThreeDS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/antique/Documents/Xcode/Projects/emuThreeDS/emuThreeDS/Objective-C/emuThreeDS-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/alexhide/emuThreeDS/emuThreeDS/Objective-C/emuThreeDS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
@@ -3461,13 +3461,13 @@
 					"$(PROJECT_DIR)/emuThreeDS/externals",
 				);
 				MARKETING_VERSION = 1.0.6.5;
-				PRODUCT_BUNDLE_IDENTIFIER = com.antique.emuThreeDS;
+				PRODUCT_BUNDLE_IDENTIFIER = com.xdccrlz.emuThreeDS;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "/Users/antique/Documents/Xcode/Projects/emuThreeDS/emuThreeDS/Objective-C/emuThreeDS-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/alexhide/emuThreeDS/emuThreeDS/Objective-C/emuThreeDS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
