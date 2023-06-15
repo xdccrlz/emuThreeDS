@@ -25,7 +25,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
         
-        window.rootViewController = UINavigationController(rootViewController: ViewController())
+        var configuration = UICollectionLayoutListConfiguration(appearance: .insetGrouped)
+        configuration.headerMode = .supplementary
+        
+        window.rootViewController = UINavigationController(rootViewController: LibraryViewController(collectionViewLayout: UICollectionViewCompositionalLayout.list(using: configuration)))
         window.makeKeyAndVisible()
     }
 

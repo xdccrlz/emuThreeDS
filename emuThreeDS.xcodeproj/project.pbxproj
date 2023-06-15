@@ -402,6 +402,9 @@
 		C12DE4BF2A399F7D006FC1E0 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C12DE4BE2A399F7D006FC1E0 /* CoreAudio.framework */; };
 		C12DE4C12A399F83006FC1E0 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C12DE4C02A399F83006FC1E0 /* AudioToolbox.framework */; };
 		C12DE4C42A399FF6006FC1E0 /* libzstd in Frameworks */ = {isa = PBXBuildFile; productRef = C12DE4C32A399FF6006FC1E0 /* libzstd */; };
+		C193BBC52A3AEFAF00421F30 /* game_info.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C193BBC32A3AEFAF00421F30 /* game_info.cpp */; };
+		C193BBC82A3AF82E00421F30 /* ImportedItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C193BBC72A3AF82E00421F30 /* ImportedItem.swift */; };
+		C193BBCA2A3AF83600421F30 /* InstalledItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C193BBC92A3AF83600421F30 /* InstalledItem.swift */; };
 		C19EC4552A39A61A0083BDBA /* OpenSSL in Frameworks */ = {isa = PBXBuildFile; productRef = C19EC4542A39A61A0083BDBA /* OpenSSL */; };
 		C19EC6B62A39AAEB0083BDBA /* md4.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C19EC5EC2A39AAEA0083BDBA /* md4.cpp */; };
 		C19EC6B72A39AAEB0083BDBA /* rdtables.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C19EC5ED2A39AAEA0083BDBA /* rdtables.cpp */; };
@@ -607,6 +610,7 @@
 		C19EC77F2A39AAEC0083BDBA /* shacal2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C19EC6B52A39AAEB0083BDBA /* shacal2.cpp */; };
 		C19EC7D92A39B15D0083BDBA /* DirectoryManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = C19EC7D82A39B15D0083BDBA /* DirectoryManager.mm */; };
 		C19EC7DD2A39B3570083BDBA /* CitraWrapper.mm in Sources */ = {isa = PBXBuildFile; fileRef = C19EC7DC2A39B3570083BDBA /* CitraWrapper.mm */; };
+		C1C7F4812A3AC4F8005890C1 /* LibraryViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C7F4802A3AC4F8005890C1 /* LibraryViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -1019,6 +1023,10 @@
 		C12DE3302A399EFC006FC1E0 /* libboost_serialization.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libboost_serialization.a; sourceTree = "<group>"; };
 		C12DE4BE2A399F7D006FC1E0 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		C12DE4C02A399F83006FC1E0 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		C193BBC32A3AEFAF00421F30 /* game_info.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = game_info.cpp; sourceTree = "<group>"; };
+		C193BBC42A3AEFAF00421F30 /* game_info.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = game_info.h; sourceTree = "<group>"; };
+		C193BBC72A3AF82E00421F30 /* ImportedItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedItem.swift; sourceTree = "<group>"; };
+		C193BBC92A3AF83600421F30 /* InstalledItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstalledItem.swift; sourceTree = "<group>"; };
 		C19EC5EC2A39AAEA0083BDBA /* md4.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = md4.cpp; sourceTree = "<group>"; };
 		C19EC5ED2A39AAEA0083BDBA /* rdtables.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = rdtables.cpp; sourceTree = "<group>"; };
 		C19EC5EE2A39AAEA0083BDBA /* fips140.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = fips140.cpp; sourceTree = "<group>"; };
@@ -1225,6 +1233,8 @@
 		C19EC7D82A39B15D0083BDBA /* DirectoryManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = DirectoryManager.mm; sourceTree = "<group>"; };
 		C19EC7DB2A39B3570083BDBA /* CitraWrapper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CitraWrapper.h; sourceTree = "<group>"; };
 		C19EC7DC2A39B3570083BDBA /* CitraWrapper.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = CitraWrapper.mm; sourceTree = "<group>"; };
+		C1C7F4802A3AC4F8005890C1 /* LibraryViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryViewController.swift; sourceTree = "<group>"; };
+		C1C7F4822A3AC530005890C1 /* emuThreeDS-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "emuThreeDS-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -2298,6 +2308,24 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		C193BBC22A3AEFA000421F30 /* Citra Wrapper */ = {
+			isa = PBXGroup;
+			children = (
+				C193BBC32A3AEFAF00421F30 /* game_info.cpp */,
+				C193BBC42A3AEFAF00421F30 /* game_info.h */,
+			);
+			path = "Citra Wrapper";
+			sourceTree = "<group>";
+		};
+		C193BBC62A3AF82200421F30 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				C193BBC72A3AF82E00421F30 /* ImportedItem.swift */,
+				C193BBC92A3AF83600421F30 /* InstalledItem.swift */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
 		C19EC5EB2A39AAEA0083BDBA /* cryptopp */ = {
 			isa = PBXGroup;
 			children = (
@@ -2511,6 +2539,7 @@
 			isa = PBXGroup;
 			children = (
 				C12D99D92A399EE4006FC1E0 /* Citra */,
+				C193BBC22A3AEFA000421F30 /* Citra Wrapper */,
 			);
 			path = "C++";
 			sourceTree = "<group>";
@@ -2519,6 +2548,7 @@
 			isa = PBXGroup;
 			children = (
 				C19EC7D62A39B1490083BDBA /* Classes */,
+				C1C7F4822A3AC530005890C1 /* emuThreeDS-Bridging-Header.h */,
 			);
 			path = "Objective-C";
 			sourceTree = "<group>";
@@ -2526,6 +2556,8 @@
 		C19EC7D42A39B1150083BDBA /* Swift */ = {
 			isa = PBXGroup;
 			children = (
+				C193BBC62A3AF82200421F30 /* Classes */,
+				C1C7F47F2A3AC4EA005890C1 /* Controllers */,
 			);
 			path = Swift;
 			sourceTree = "<group>";
@@ -2555,6 +2587,14 @@
 				C19EC7DC2A39B3570083BDBA /* CitraWrapper.mm */,
 			);
 			path = "Citra Wrapper";
+			sourceTree = "<group>";
+		};
+		C1C7F47F2A3AC4EA005890C1 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				C1C7F4802A3AC4F8005890C1 /* LibraryViewController.swift */,
+			);
+			path = Controllers;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -2949,6 +2989,7 @@
 				C19EC7592A39AAEC0083BDBA /* scrypt.cpp in Sources */,
 				C19EC6FB2A39AAEC0083BDBA /* cmac.cpp in Sources */,
 				C12D9E5B2A399EE6006FC1E0 /* sw_framebuffer.cpp in Sources */,
+				C193BBCA2A3AF83600421F30 /* InstalledItem.swift in Sources */,
 				C12D9D8E2A399EE5006FC1E0 /* frd.cpp in Sources */,
 				C19EC75F2A39AAEC0083BDBA /* polynomi.cpp in Sources */,
 				C12D9DDD2A399EE5006FC1E0 /* session.cpp in Sources */,
@@ -2958,6 +2999,7 @@
 				C12D9E272A399EE5006FC1E0 /* server.cpp in Sources */,
 				C12D9DA72A399EE5006FC1E0 /* news.cpp in Sources */,
 				C19EC6FC2A39AAEC0083BDBA /* kalynatab.cpp in Sources */,
+				C1C7F4812A3AC4F8005890C1 /* LibraryViewController.swift in Sources */,
 				C12D9DD52A399EE5006FC1E0 /* config_mem.cpp in Sources */,
 				C12D9E562A399EE6006FC1E0 /* renderer_base.cpp in Sources */,
 				C19EC7552A39AAEC0083BDBA /* vmac.cpp in Sources */,
@@ -3159,6 +3201,7 @@
 				C12D9E722A399EE6006FC1E0 /* timer.cpp in Sources */,
 				C12D9D5B2A399EE5006FC1E0 /* cecd_ndm.cpp in Sources */,
 				C12D9DB22A399EE5006FC1E0 /* nfc_m.cpp in Sources */,
+				C193BBC52A3AEFAF00421F30 /* game_info.cpp in Sources */,
 				C19EC7652A39AAEC0083BDBA /* cpu.cpp in Sources */,
 				C12D9E122A399EE5006FC1E0 /* loader.cpp in Sources */,
 				C12D9E082A399EE5006FC1E0 /* backend.cpp in Sources */,
@@ -3182,6 +3225,7 @@
 				C19EC7242A39AAEC0083BDBA /* dlltest.cpp in Sources */,
 				C12D9DC02A399EE5006FC1E0 /* directory.cpp in Sources */,
 				C12D9E1C2A399EE5006FC1E0 /* arm_dyncom_thumb.cpp in Sources */,
+				C193BBC82A3AF82E00421F30 /* ImportedItem.swift in Sources */,
 				C19EC7482A39AAEC0083BDBA /* channels.cpp in Sources */,
 				C19EC7402A39AAEC0083BDBA /* panama.cpp in Sources */,
 				C12D9DE72A399EE5006FC1E0 /* default_applets.cpp in Sources */,
@@ -3350,6 +3394,7 @@
 				);
 				INFOPLIST_FILE = emuThreeDS/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
@@ -3369,7 +3414,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/antique/Documents/Xcode/Projects/emuThreeDS/emuThreeDS/Objective-C/emuThreeDS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
@@ -3402,6 +3447,7 @@
 				);
 				INFOPLIST_FILE = emuThreeDS/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.games";
+				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
@@ -3421,7 +3467,7 @@
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "/Users/antique/Documents/Xcode/Projects/emuThreeDS/emuThreeDS/Objective-C/emuThreeDS-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				SYSTEM_HEADER_SEARCH_PATHS = (
 					"\"$(SRCROOT)/emuThreeDS/externals/include\"",
